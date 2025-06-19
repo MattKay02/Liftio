@@ -21,4 +21,4 @@ Gym-tracker mobile app to log workouts, track progress, and share PRs.
 
 1. **Clone**
    ```bash
-   git clone git@github.com:your-username/liftio.git && cd liftio
+   git clone git@github.com:MattKay02/liftio.git && cd liftio
