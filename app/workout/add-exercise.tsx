@@ -120,11 +120,11 @@ export default function AddExerciseScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -136,11 +136,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.fontSize.title,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
   },
   closeButton: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
   },
   searchContainer: {
     paddingHorizontal: Spacing.md,
@@ -158,19 +158,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm + 4,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.grey300,
-    backgroundColor: Colors.white,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bg,
   },
   categoryChipActive: {
-    backgroundColor: Colors.grey800,
-    borderColor: Colors.grey800,
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
   },
   categoryText: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
   },
   categoryTextActive: {
-    color: Colors.white,
+    color: Colors.accentText,
   },
   listContent: {
     paddingHorizontal: Spacing.md,
@@ -179,16 +179,16 @@ const styles = StyleSheet.create({
   exerciseRow: {
     paddingVertical: Spacing.sm + 4,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey100,
+    borderBottomColor: Colors.border,
   },
   exerciseName: {
     fontSize: Typography.fontSize.body,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     marginBottom: 2,
   },
   exerciseMeta: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
   },
 });

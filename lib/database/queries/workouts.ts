@@ -92,6 +92,17 @@ export const getRecentWorkouts = (limit: number = 20): WorkoutWithExercises[] =>
   return workoutRows.map(mapWorkoutWithExercises);
 };
 
+export const getAllWorkouts = (limit: number = 100): WorkoutWithExercises[] => {
+  const db = getDb();
+
+  const workoutRows = db.getAllSync<WorkoutRow>(
+    'SELECT * FROM workouts WHERE is_template = 0 ORDER BY date DESC LIMIT ?',
+    [limit]
+  );
+
+  return workoutRows.map(mapWorkoutWithExercises);
+};
+
 export const getRecentTemplates = (limit: number = 5): WorkoutWithExercises[] => {
   const db = getDb();
 

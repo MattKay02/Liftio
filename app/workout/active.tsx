@@ -114,11 +114,11 @@ export default function ActiveWorkoutScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey200,
+    borderBottomColor: Colors.border,
   },
   headerCenter: {
     alignItems: 'center',
@@ -135,11 +135,11 @@ const styles = StyleSheet.create({
   workoutName: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
   },
   timer: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey400,
+    color: Colors.textSecondary,
     marginTop: 2,
   },
   content: {

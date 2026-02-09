@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Dumbbell, Calendar } from 'lucide-react-native';
 import { Colors } from '@/constants';
 
 export default function TabLayout() {
@@ -7,55 +8,43 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.grey900,
-        tabBarInactiveTintColor: Colors.grey400,
+        tabBarActiveTintColor: Colors.textPrimary,
+        tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
+        tabBarActiveTintColorLight: Colors.textPrimary,
+        tabBarInactiveTintColorLight: Colors.textTertiary,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <TabIcon label="🏠" color={color} />,
+          title: 'Workout',
+          tabBarIcon: ({ color }) => <Dumbbell size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="logs"
         options={{
-          title: 'History',
-          tabBarIcon: ({ color }) => <TabIcon label="📋" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <TabIcon label="⚙️" color={color} />,
+          title: 'Logs',
+          tabBarIcon: ({ color }) => <Calendar size={24} color={color} />,
         }}
       />
     </Tabs>
   );
 }
 
-const TabIcon = ({ label }: { label: string; color: string }) => {
-  return <Text style={styles.icon}>{label}</Text>;
-};
-
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: Colors.white,
-    borderTopColor: Colors.grey200,
+    backgroundColor: Colors.bgCard,
+    borderTopColor: Colors.border,
     borderTopWidth: 1,
-    height: 85,
+    height: 80,
     paddingBottom: 20,
     paddingTop: 8,
   },
   tabBarLabel: {
     fontSize: 11,
     fontWeight: '600',
-  },
-  icon: {
-    fontSize: 20,
   },
 });

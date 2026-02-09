@@ -1,21 +1,21 @@
 export const Colors = {
   // Backgrounds
-  white: '#FFFFFF',
-  grey50: '#FAFAFA',
-  grey100: '#F5F5F5',
+  bg: '#1A1A1A',           // Main background
+  bgCard: '#2D2D2D',       // Cards
+  bgElevated: '#404040',   // Inputs, elevated elements
 
   // Text
-  grey900: '#1A1A1A',
-  grey600: '#4B5563',
-  grey400: '#9CA3AF',
+  textPrimary: '#FFFFFF',     // Headers, exercise names
+  textSecondary: '#9CA3AF',   // Labels, meta info
+  textTertiary: '#6B7280',    // Previous data, timestamps
 
   // UI Elements
-  grey200: '#E5E7EB',
-  grey300: '#D1D5DB',
-  grey800: '#111827',
-  grey500: '#6B7280',
+  border: '#404040',          // Subtle borders
+  accent: '#FFFFFF',          // Primary buttons
+  accentText: '#1A1A1A',      // Text on white buttons
+  highlight: '#4B5563',       // Calendar day highlight circle
 
-  // Semantic
+  // Semantic (legacy names for compatibility)
   red600: '#DC2626',
   green600: '#16A34A',
 } as const;

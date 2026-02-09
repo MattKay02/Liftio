@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/shared/Header';
 import { WorkoutWithExercises } from '@/types/workout';
 import { getRecentTemplates } from '@/lib/database/queries/workouts';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
@@ -38,12 +39,8 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <Header showSettings={false} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>Liftio</Text>
-          <Text style={styles.tagline}>Track your lifts</Text>
-        </View>
-
         {isWorkoutActive ? (
           <Button
             title="RESUME WORKOUT"
@@ -60,22 +57,26 @@ export default function HomeScreen() {
 
         {recentWorkouts.length > 0 && (
           <View style={styles.templatesSection}>
-            <Text style={styles.sectionLabel}>Recent Workouts</Text>
+            <Text style={styles.sectionLabel}>My Workouts</Text>
             {recentWorkouts.map((workout) => (
-              <Pressable
-                key={workout.id}
-                style={styles.templateCard}
-                onPress={() => handleStartFromTemplate(workout)}
-              >
-                <Text style={styles.templateName}>{workout.name}</Text>
-                <Text style={styles.templateMeta}>
-                  {workout.exercises.length} exercises
-                  {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
-                </Text>
-                <Text style={styles.templateDate}>
-                  {getTimeSinceString(workout.date)}
-                </Text>
-              </Pressable>
+              <View key={workout.id} style={styles.templateCardContainer}>
+                <View style={styles.templateCardContent}>
+                  <Text style={styles.templateName}>{workout.name}</Text>
+                  <Text style={styles.templateMeta}>
+                    {workout.exercises.length} exercises
+                    {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
+                  </Text>
+                  <Text style={styles.templateDate}>
+                    Last: {getTimeSinceString(workout.date)}
+                  </Text>
+                </View>
+                <Pressable
+                  style={styles.startButton2}
+                  onPress={() => handleStartFromTemplate(workout)}
+                >
+                  <Text style={styles.startButtonText}>Start</Text>
+                </Pressable>
+              </View>
             ))}
           </View>
         )}
@@ -83,7 +84,10 @@ export default function HomeScreen() {
         {recentWorkouts.length === 0 && (
           <View style={styles.emptySection}>
             <Text style={styles.emptyText}>
-              No workouts yet. Start your first one!
+              No templates yet
+            </Text>
+            <Text style={styles.emptySubtext}>
+              Create one by saving a workout
             </Text>
           </View>
         )}
@@ -95,68 +99,78 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   content: {
+    paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xl,
   },
-  header: {
-    alignItems: 'center',
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.lg,
-  },
-  logo: {
-    fontSize: Typography.fontSize.display,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
-  },
-  tagline: {
-    fontSize: Typography.fontSize.body,
-    color: Colors.grey400,
-    marginTop: Spacing.xs,
-  },
   startButton: {
-    marginHorizontal: Spacing.xl,
-    marginTop: Spacing.md,
+    marginTop: Spacing.lg,
+    marginHorizontal: 0,
+    height: 56,
+    backgroundColor: Colors.accent,
   },
   templatesSection: {
-    marginTop: Spacing.xl,
-    marginHorizontal: Spacing.md,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   sectionLabel: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey600,
+    color: Colors.textTertiary,
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
-  templateCard: {
-    backgroundColor: Colors.grey50,
+  templateCardContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: Colors.grey200,
+    borderColor: Colors.border,
     borderRadius: 12,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  templateCardContent: {
+    flex: 1,
   },
   templateName: {
     fontSize: Typography.fontSize.body,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
   templateMeta: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
     marginBottom: Spacing.xs,
   },
   templateDate: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
+  },
+  startButton2: {
+    backgroundColor: Colors.bgElevated,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    height: 36,
+    minWidth: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  startButtonText: {
+    fontSize: Typography.fontSize.body,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
   },
   emptySection: {
     alignItems: 'center',
@@ -165,7 +179,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  emptySubtext: {
+    fontSize: Typography.fontSize.body,
+    color: Colors.textTertiary,
     textAlign: 'center',
   },
 });

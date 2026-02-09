@@ -9,7 +9,7 @@ export const Input = ({ variant = 'default', style, ...props }: InputProps) => {
   return (
     <TextInput
       style={[styles.input, variant === 'number' && styles.numberInput, style]}
-      placeholderTextColor={Colors.grey400}
+      placeholderTextColor={Colors.textTertiary}
       {...props}
     />
   );
@@ -17,16 +17,18 @@ export const Input = ({ variant = 'default', style, ...props }: InputProps) => {
 
 const styles = StyleSheet.create({
   input: {
-    backgroundColor: Colors.grey100,
+    backgroundColor: Colors.bgElevated,
     borderWidth: 1,
-    borderColor: Colors.grey300,
+    borderColor: Colors.border,
     borderRadius: 8,
     padding: Spacing.sm,
     fontSize: Typography.fontSize.body,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     minHeight: 44,
+    fontFamily: Typography.fontFamily.primary,
   },
   numberInput: {
     textAlign: 'center',
+    fontFamily: Typography.fontFamily.mono,
   },
 });

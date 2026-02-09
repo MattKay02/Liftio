@@ -84,11 +84,11 @@ export default function FinishWorkoutScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -97,16 +97,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey200,
+    borderBottomColor: Colors.border,
   },
   backButton: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
   },
   title: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
   },
   content: {
     padding: Spacing.lg,
@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     marginBottom: Spacing.xl,
     paddingVertical: Spacing.lg,
-    backgroundColor: Colors.grey50,
+    backgroundColor: Colors.bgCard,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.grey200,
+    borderColor: Colors.border,
   },
   summaryItem: {
     alignItems: 'center',
@@ -127,16 +127,16 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: Typography.fontSize.title,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
   summaryLabel: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
   },
   inputLabel: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,

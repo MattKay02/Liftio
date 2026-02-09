@@ -10,9 +10,10 @@ interface SetRowProps {
   setNumber: number;
   exerciseId: string;
   exerciseName: string;
+  readonly?: boolean;
 }
 
-export const SetRow = ({ set, setNumber, exerciseId, exerciseName }: SetRowProps) => {
+export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = false }: SetRowProps) => {
   const { updateSet, completeSet, getPreviousSetData } = useWorkoutStore();
   const [previousData, setPreviousData] = useState('');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
@@ -27,18 +28,21 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName }: SetRowProps
   }, []);
 
   const handleRepsChange = (value: string) => {
+    if (readonly) return;
     setReps(value);
     const numValue = parseInt(value) || 0;
     updateSet(exerciseId, set.id, { reps: numValue });
   };
 
   const handleWeightChange = (value: string) => {
+    if (readonly) return;
     setWeight(value);
     const numValue = parseFloat(value) || 0;
     updateSet(exerciseId, set.id, { weight: numValue });
   };
 
   const handleComplete = () => {
+    if (readonly) return;
     if (parseInt(reps) > 0 && parseFloat(weight) > 0) {
       completeSet(exerciseId, set.id);
     }
@@ -56,8 +60,8 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName }: SetRowProps
         onChangeText={handleRepsChange}
         keyboardType="numeric"
         placeholder="0"
-        placeholderTextColor={Colors.grey400}
-        editable={!set.isCompleted}
+        placeholderTextColor={Colors.textTertiary}
+        editable={!set.isCompleted && !readonly}
       />
       <TextInput
         style={[styles.input, styles.weightCol]}
@@ -65,14 +69,14 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName }: SetRowProps
         onChangeText={handleWeightChange}
         keyboardType="decimal-pad"
         placeholder="0"
-        placeholderTextColor={Colors.grey400}
-        editable={!set.isCompleted}
+        placeholderTextColor={Colors.textTertiary}
+        editable={!set.isCompleted && !readonly}
       />
       <View style={styles.checkCol}>
         <Checkbox
           checked={set.isCompleted}
           onPress={handleComplete}
-          disabled={set.isCompleted}
+          disabled={set.isCompleted || readonly}
         />
       </View>
     </View>
@@ -85,30 +89,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xs + 2,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey100,
+    borderBottomColor: Colors.bgElevated,
   },
   completedRow: {
     opacity: 0.6,
   },
   text: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
   prevText: {
-    color: Colors.grey400,
+    color: Colors.textTertiary,
     fontSize: Typography.fontSize.caption,
   },
   input: {
-    backgroundColor: Colors.grey100,
+    backgroundColor: Colors.bgElevated,
     borderWidth: 1,
-    borderColor: Colors.grey300,
+    borderColor: Colors.border,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 4,
     fontSize: Typography.fontSize.body,
     textAlign: 'center',
-    color: Colors.grey900,
+    color: Colors.textPrimary,
   },
   setCol: { flex: 0.5 },
   prevCol: { flex: 1.5 },

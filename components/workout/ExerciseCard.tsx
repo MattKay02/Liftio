@@ -6,21 +6,24 @@ import { Colors, Spacing, Typography } from '@/constants';
 
 interface ExerciseCardProps {
   exercise: ExerciseWithSets;
+  readonly?: boolean;
 }
 
-export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
+export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) => {
   const { removeExercise, addSet } = useWorkoutStore();
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-        <Pressable
-          onPress={() => removeExercise(exercise.id)}
-          hitSlop={8}
-        >
-          <Text style={styles.removeButton}>✕</Text>
-        </Pressable>
+        {!readonly && (
+          <Pressable
+            onPress={() => removeExercise(exercise.id)}
+            hitSlop={8}
+          >
+            <Text style={styles.removeButton}>✕</Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.table}>
@@ -39,22 +42,25 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
             setNumber={index + 1}
             exerciseId={exercise.id}
             exerciseName={exercise.exerciseName}
+            readonly={readonly}
           />
         ))}
       </View>
 
-      <Pressable style={styles.addSetButton} onPress={() => addSet(exercise.id)}>
-        <Text style={styles.addSetText}>+ Add Set</Text>
-      </Pressable>
+      {!readonly && (
+        <Pressable style={styles.addSetButton} onPress={() => addSet(exercise.id)}>
+          <Text style={styles.addSetText}>+ Add Set</Text>
+        </Pressable>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.grey50,
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: Colors.grey200,
+    borderColor: Colors.border,
     borderRadius: 12,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -68,12 +74,12 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: Typography.fontSize.title,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     flex: 1,
   },
   removeButton: {
     fontSize: 18,
-    color: Colors.grey400,
+    color: Colors.textSecondary,
     paddingLeft: Spacing.sm,
   },
   table: {
@@ -83,11 +89,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingBottom: Spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey200,
+    borderBottomColor: Colors.border,
   },
   headerText: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
     textAlign: 'center',
   },
   setCol: { flex: 0.5 },
@@ -102,6 +108,6 @@ const styles = StyleSheet.create({
   },
   addSetText: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
   },
 });

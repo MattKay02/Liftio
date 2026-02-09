@@ -55,13 +55,13 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   disabled: {
-    backgroundColor: Colors.grey200,
+    backgroundColor: Colors.bgElevated,
   },
 });
 
 const variantStyles = StyleSheet.create({
   primary: {
-    backgroundColor: Colors.grey800,
+    backgroundColor: Colors.accent,
   },
   secondary: {
     backgroundColor: 'transparent',
@@ -79,16 +79,16 @@ const variantStyles = StyleSheet.create({
 
 const textVariantStyles = StyleSheet.create({
   primary: {
-    color: Colors.white,
+    color: Colors.accentText,
   },
   secondary: {
-    color: Colors.grey600,
+    color: Colors.textSecondary,
   },
   destructive: {
     color: Colors.red600,
   },
   text: {
-    color: Colors.grey600,
+    color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.regular,
   },
 });

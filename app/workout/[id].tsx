@@ -105,11 +105,11 @@ export default function WorkoutDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -118,11 +118,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey200,
+    borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
   },
   content: {
     flex: 1,
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
     textAlign: 'center',
     marginTop: Spacing.xxl,
   },
   workoutName: {
     fontSize: Typography.fontSize.display,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     marginBottom: Spacing.sm,
   },
   metaRow: {
@@ -150,11 +150,11 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
   },
   notes: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
     lineHeight: Typography.lineHeight.body,
     marginBottom: Spacing.lg,
     fontStyle: 'italic',
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
     marginBottom: Spacing.sm,
   },
   setsTable: {},
@@ -173,22 +173,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingBottom: Spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey200,
+    borderBottomColor: Colors.border,
   },
   setsHeaderText: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
     fontWeight: Typography.fontWeight.semibold,
   },
   setRow: {
     flexDirection: 'row',
     paddingVertical: Spacing.xs + 2,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey100,
+    borderBottomColor: Colors.border,
   },
   setText: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey900,
+    color: Colors.textPrimary,
   },
   setNumCol: {
     flex: 0.5,
