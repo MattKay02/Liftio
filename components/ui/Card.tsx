@@ -15,9 +15,9 @@ export const Card = ({ children, style, ...props }: CardProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.grey50,
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: Colors.grey200,
+    borderColor: Colors.border,
     borderRadius: 12,
     padding: Spacing.md,
   },

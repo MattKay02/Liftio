@@ -25,12 +25,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.grey600,
+    color: Colors.textSecondary,
     marginBottom: Spacing.sm,
   },
   message: {
     fontSize: Typography.fontSize.body,
-    color: Colors.grey400,
+    color: Colors.textTertiary,
     textAlign: 'center',
     lineHeight: Typography.lineHeight.body,
   },

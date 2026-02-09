@@ -99,8 +99,17 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
     const duration = Math.floor((Date.now() - workoutStartTime) / 1000);
 
+    // Filter out sets with 0 reps, then remove exercises with no remaining sets
+    const filteredExercises = activeWorkout.exercises
+      .map((e) => ({
+        ...e,
+        sets: e.sets.filter((s) => s.reps > 0),
+      }))
+      .filter((e) => e.sets.length > 0);
+
     const finalWorkout: WorkoutWithExercises = {
       ...activeWorkout,
+      exercises: filteredExercises,
       duration,
       notes: notes || null,
       updatedAt: Date.now(),

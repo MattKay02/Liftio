@@ -12,6 +12,6 @@ export const Divider = ({ marginVertical = Spacing.md }: DividerProps) => {
 const styles = StyleSheet.create({
   divider: {
     height: 1,
-    backgroundColor: Colors.grey200,
+    backgroundColor: Colors.border,
   },
 });

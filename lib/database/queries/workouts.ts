@@ -1,5 +1,6 @@
 import { getDb } from '../db';
 import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet } from '@/types/workout';
+import { generateUUID } from '@/lib/utils/uuid';
 
 interface WorkoutRow {
   id: string;
@@ -112,6 +113,58 @@ export const getRecentTemplates = (limit: number = 5): WorkoutWithExercises[] =>
   );
 
   return workoutRows.map(mapWorkoutWithExercises);
+};
+
+export const getCustomTemplates = (): WorkoutWithExercises[] => {
+  const db = getDb();
+
+  const workoutRows = db.getAllSync<WorkoutRow>(
+    'SELECT * FROM workouts WHERE is_template = 1 ORDER BY created_at DESC'
+  );
+
+  return workoutRows.map(mapWorkoutWithExercises);
+};
+
+export const getCompletedWorkouts = (limit: number = 20): WorkoutWithExercises[] => {
+  const db = getDb();
+
+  const workoutRows = db.getAllSync<WorkoutRow>(
+    'SELECT * FROM workouts WHERE is_template = 0 ORDER BY date DESC LIMIT ?',
+    [limit]
+  );
+
+  return workoutRows.map(mapWorkoutWithExercises);
+};
+
+export const saveTemplate = (name: string, exerciseNames: string[]) => {
+  const db = getDb();
+  const now = Date.now();
+  const workoutId = generateUUID();
+
+  db.runSync(
+    `INSERT INTO workouts (id, name, date, duration, notes, is_template, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+    [workoutId, name, 0, null, null, now, now]
+  );
+
+  for (let i = 0; i < exerciseNames.length; i++) {
+    const exerciseId = generateUUID();
+
+    db.runSync(
+      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [exerciseId, workoutId, exerciseNames[i], i, null, now]
+    );
+
+    // Create 3 empty sets per exercise as a framework
+    for (let j = 1; j <= 3; j++) {
+      db.runSync(
+        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, is_completed, created_at)
+         VALUES (?, ?, ?, 0, 0, 0, ?)`,
+        [generateUUID(), exerciseId, j, now]
+      );
+    }
+  }
 };
 
 export const getWorkoutById = (id: string): WorkoutWithExercises | null => {

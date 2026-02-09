@@ -1,17 +1,22 @@
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useMemo } from 'react';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Input } from '@/components/ui/Input';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
+import { useTemplateStore } from '@/lib/stores/templateStore';
 import { getAllExercises, getCategories } from '@/lib/database/queries/exerciseLibrary';
 import { ExerciseLibraryItem } from '@/types/workout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AddExerciseScreen() {
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isTemplateMode = params.mode === 'template';
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const addExercise = useWorkoutStore((s) => s.addExercise);
+  const addWorkoutExercise = useWorkoutStore((s) => s.addExercise);
+  const addTemplateExercise = useTemplateStore((s) => s.addExercise);
 
   const allExercises = useMemo(() => getAllExercises(), []);
   const categories = useMemo(() => getCategories(), []);
@@ -32,7 +37,11 @@ export default function AddExerciseScreen() {
   }, [allExercises, searchQuery, selectedCategory]);
 
   const handleSelect = (exercise: ExerciseLibraryItem) => {
-    addExercise(exercise.name);
+    if (isTemplateMode) {
+      addTemplateExercise(exercise.name, exercise.muscleGroup, exercise.category);
+    } else {
+      addWorkoutExercise(exercise.name);
+    }
     router.back();
   };
 
@@ -40,7 +49,7 @@ export default function AddExerciseScreen() {
     <Pressable style={styles.exerciseRow} onPress={() => handleSelect(item)}>
       <Text style={styles.exerciseName}>{item.name}</Text>
       <Text style={styles.exerciseMeta}>
-        {item.muscleGroup} \u00B7 {item.category}
+        {item.muscleGroup} {'\u00B7'} {item.category}
       </Text>
     </Pressable>
   );

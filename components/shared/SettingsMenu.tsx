@@ -11,7 +11,11 @@ interface SettingsMenuProps {
 }
 
 export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
-  const { weightUnit, setWeightUnit, defaultRestTimer, setDefaultRestTimer } = useSettingsStore();
+  const settings = useSettingsStore((s) => s.settings);
+  const updateWeightUnit = useSettingsStore((s) => s.updateWeightUnit);
+  const updateRestTimer = useSettingsStore((s) => s.updateRestTimer);
+  const weightUnit = settings.weightUnit;
+  const defaultRestTimer = settings.defaultRestTimer;
 
   const restTimerOptions = [60, 90, 120, 180];
 
@@ -44,7 +48,7 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
               <View style={styles.optionGroup}>
                 <Pressable
                   style={[styles.optionButton, weightUnit === 'lbs' && styles.optionButtonActive]}
-                  onPress={() => setWeightUnit('lbs')}
+                  onPress={() => updateWeightUnit('lbs')}
                 >
                   <Text
                     style={[
@@ -62,7 +66,7 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
                 </Pressable>
                 <Pressable
                   style={[styles.optionButton, weightUnit === 'kg' && styles.optionButtonActive]}
-                  onPress={() => setWeightUnit('kg')}
+                  onPress={() => updateWeightUnit('kg')}
                 >
                   <Text
                     style={[
@@ -92,7 +96,7 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
                       styles.timerButton,
                       defaultRestTimer === seconds && styles.timerButtonActive,
                     ]}
-                    onPress={() => setDefaultRestTimer(seconds)}
+                    onPress={() => updateRestTimer(seconds)}
                   >
                     <Text
                       style={[

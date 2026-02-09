@@ -1,13 +1,8 @@
 import React, { useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, PanResponder, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, PanResponder } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Colors, Spacing } from '@/constants';
 import { WorkoutWithExercises } from '@/types/workout';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CALENDAR_PADDING = 16;
-const GRID_GAP = 4;
-const CELL_WIDTH = (SCREEN_WIDTH - CALENDAR_PADDING * 2 - Spacing.md * 2 - GRID_GAP * 6) / 7;
 
 interface CalendarViewProps {
   workouts: (WorkoutWithExercises & { date: number })[];
@@ -49,7 +44,9 @@ export const CalendarView = ({ workouts, onSelectDate, selectedDate }: CalendarV
   };
 
   const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    // Shift so Monday=0, Tuesday=1, ..., Sunday=6
+    const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return (day + 6) % 7;
   };
 
   const getWorkoutsForDate = (day: number) => {
@@ -106,7 +103,7 @@ export const CalendarView = ({ workouts, onSelectDate, selectedDate }: CalendarV
   }
 
   const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
     <View style={styles.outerContainer} {...panResponder.panHandlers}>
@@ -193,7 +190,7 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: Colors.bg,
-    paddingHorizontal: CALENDAR_PADDING,
+    paddingHorizontal: 16,
     paddingTop: Spacing.md,
   },
   card: {
@@ -231,11 +228,10 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: GRID_GAP,
   },
   dayCell: {
-    width: CELL_WIDTH,
-    height: CELL_WIDTH + 12,
+    width: '14.28%',
+    height: 56,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingTop: 6,
