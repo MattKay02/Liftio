@@ -14,11 +14,11 @@ export const Header = ({ showSettings = false, onSettingsPress }: HeaderProps) =
         {/* Logo */}
         <View style={styles.logoSection}>
           <Image
-            source={require('../../assets/images/logo/liftio-high-resolution-logo.png')}
+            source={require('../../assets/images/logo/liftio-high-resolution-logo-transparent.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}>Liftio</Text>
+          <Text style={styles.title}> </Text> {/* Heading title can appear here */}
         </View>
 
         {/* Settings Button */}

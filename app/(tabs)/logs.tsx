@@ -1,4 +1,5 @@
-import { View, SafeAreaView, StyleSheet, useState, useCallback } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, SafeAreaView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '@/constants';
 import { Header } from '@/components/shared/Header';
@@ -21,9 +22,9 @@ export default function LogsScreen() {
     }, [])
   );
 
-  const loadWorkouts = async () => {
+  const loadWorkouts = () => {
     try {
-      const allWorkouts = await getAllWorkouts();
+      const allWorkouts = getAllWorkouts();
       setWorkouts(allWorkouts);
     } catch (error) {
       console.error('Failed to load workouts:', error);
