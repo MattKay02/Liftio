@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -6,21 +6,19 @@ import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/shared/Header';
 import { WorkoutWithExercises } from '@/types/workout';
-import { getCustomTemplates, getCompletedWorkouts } from '@/lib/database/queries/workouts';
+import { getCustomTemplates } from '@/lib/database/queries/workouts';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
-import { getTimeSinceString, formatDuration } from '@/lib/utils/date';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pencil, Plus } from 'lucide-react-native';
+import { MAX_CUSTOM_WORKOUTS } from '@/lib/utils/validation';
 
 export default function HomeScreen() {
   const [templates, setTemplates] = useState<WorkoutWithExercises[]>([]);
-  const [recentWorkouts, setRecentWorkouts] = useState<WorkoutWithExercises[]>([]);
   const { isWorkoutActive } = useWorkoutStore();
 
   useFocusEffect(
     useCallback(() => {
       setTemplates(getCustomTemplates());
-      setRecentWorkouts(getCompletedWorkouts(20));
     }, [])
   );
 
@@ -40,10 +38,15 @@ export default function HomeScreen() {
   };
 
   const handleCreateTemplate = () => {
+    if (templates.length >= MAX_CUSTOM_WORKOUTS) {
+      Alert.alert(
+        'Workout Limit Reached',
+        `You can have up to ${MAX_CUSTOM_WORKOUTS} custom workouts. Delete one to create a new one.`
+      );
+      return;
+    }
     router.push('/workout/create-template');
   };
-
-  const hasWorkouts = templates.length > 0 || recentWorkouts.length > 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -129,43 +132,6 @@ export default function HomeScreen() {
           </View>
         </Pressable>
 
-        {/* Recent Workouts */}
-        {recentWorkouts.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Recent</Text>
-            {recentWorkouts.map((workout) => (
-              <Pressable
-                key={workout.id}
-                style={({ pressed }) => [
-                  styles.workoutCard,
-                  pressed && styles.workoutCardPressed,
-                ]}
-                onPress={() => handleStartFromTemplate(workout)}
-              >
-                <View style={styles.workoutCardContent}>
-                  <Text style={styles.workoutName}>{workout.name}</Text>
-                  <Text style={styles.workoutMeta}>
-                    {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
-                    {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
-                  </Text>
-                  <Text style={styles.workoutDate}>
-                    {getTimeSinceString(workout.date)}
-                  </Text>
-                </View>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.editButton,
-                    pressed && styles.editButtonPressed,
-                  ]}
-                  onPress={() => handleEditWorkout(workout)}
-                  hitSlop={8}
-                >
-                  <Pencil size={16} color={Colors.textSecondary} />
-                </Pressable>
-              </Pressable>
-            ))}
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -226,10 +192,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.caption,
     color: Colors.textSecondary,
     marginBottom: Spacing.xs,
-  },
-  workoutDate: {
-    fontSize: Typography.fontSize.caption,
-    color: Colors.textTertiary,
   },
   exercisePreview: {
     flexDirection: 'row',

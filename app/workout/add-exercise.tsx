@@ -1,4 +1,4 @@
-import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useMemo } from 'react';
 import { Colors, Typography, Spacing } from '@/constants';
@@ -8,6 +8,7 @@ import { useTemplateStore } from '@/lib/stores/templateStore';
 import { getAllExercises, getCategories } from '@/lib/database/queries/exerciseLibrary';
 import { ExerciseLibraryItem } from '@/types/workout';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MAX_EXERCISES_PER_WORKOUT } from '@/lib/utils/validation';
 
 export default function AddExerciseScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
@@ -36,7 +37,22 @@ export default function AddExerciseScreen() {
     return results;
   }, [allExercises, searchQuery, selectedCategory]);
 
+  const templateExercises = useTemplateStore((s) => s.exercises);
+  const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
+
   const handleSelect = (exercise: ExerciseLibraryItem) => {
+    const currentCount = isTemplateMode
+      ? templateExercises.length
+      : (activeWorkout?.exercises.length ?? 0);
+
+    if (currentCount >= MAX_EXERCISES_PER_WORKOUT) {
+      Alert.alert(
+        'Exercise Limit',
+        `Maximum ${MAX_EXERCISES_PER_WORKOUT} exercises per workout.`
+      );
+      return;
+    }
+
     if (isTemplateMode) {
       addTemplateExercise(exercise.name, exercise.muscleGroup, exercise.category);
     } else {

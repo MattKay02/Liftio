@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Colors, Spacing, Typography } from '@/constants';
 import { formatDuration } from '@/lib/utils/date';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MAX_EXERCISES_PER_WORKOUT } from '@/lib/utils/validation';
 
 export default function ActiveWorkoutScreen() {
   const params = useLocalSearchParams<{ templateId?: string }>();
@@ -71,6 +72,13 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleAddExercise = () => {
+    if (activeWorkout && activeWorkout.exercises.length >= MAX_EXERCISES_PER_WORKOUT) {
+      Alert.alert(
+        'Exercise Limit',
+        `Maximum ${MAX_EXERCISES_PER_WORKOUT} exercises per workout.`
+      );
+      return;
+    }
     router.push('/workout/add-exercise');
   };
 

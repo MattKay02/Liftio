@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { formatDuration } from '@/lib/utils/date';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MAX_NOTES_LENGTH } from '@/lib/utils/validation';
 
 export default function FinishWorkoutScreen() {
   const [notes, setNotes] = useState('');
@@ -54,11 +55,17 @@ export default function FinishWorkoutScreen() {
             </View>
           </View>
 
-          <Text style={styles.inputLabel}>Notes (optional)</Text>
+          <View style={styles.notesLabelRow}>
+            <Text style={styles.inputLabel}>Notes (optional)</Text>
+            {notes.length > 0 && (
+              <Text style={styles.charCounter}>{notes.length}/{MAX_NOTES_LENGTH}</Text>
+            )}
+          </View>
           <Input
             placeholder="How was your workout?"
             value={notes}
             onChangeText={setNotes}
+            maxLength={MAX_NOTES_LENGTH}
             multiline
             numberOfLines={3}
             style={styles.notesInput}
@@ -134,13 +141,22 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.caption,
     color: Colors.textTertiary,
   },
+  notesLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
   inputLabel: {
     fontSize: Typography.fontSize.caption,
     color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
+  },
+  charCounter: {
+    fontSize: Typography.fontSize.caption,
+    color: Colors.textTertiary,
   },
   notesInput: {
     minHeight: 80,

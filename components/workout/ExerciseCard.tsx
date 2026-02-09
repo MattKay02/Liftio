@@ -3,6 +3,7 @@ import { ExerciseWithSets } from '@/types/workout';
 import { SetRow } from './SetRow';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { Colors, Spacing, Typography } from '@/constants';
+import { MAX_SETS_PER_EXERCISE } from '@/lib/utils/validation';
 
 interface ExerciseCardProps {
   exercise: ExerciseWithSets;
@@ -47,7 +48,7 @@ export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) 
         ))}
       </View>
 
-      {!readonly && (
+      {!readonly && exercise.sets.length < MAX_SETS_PER_EXERCISE && (
         <Pressable style={styles.addSetButton} onPress={() => addSet(exercise.id)}>
           <Text style={styles.addSetText}>+ Add Set</Text>
         </Pressable>

@@ -4,6 +4,7 @@ import { WorkoutSet } from '@/types/workout';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Colors, Spacing, Typography } from '@/constants';
+import { sanitizeReps, sanitizeWeight } from '@/lib/utils/validation';
 
 interface SetRowProps {
   set: WorkoutSet;
@@ -29,15 +30,17 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
 
   const handleRepsChange = (value: string) => {
     if (readonly) return;
-    setReps(value);
-    const numValue = parseInt(value) || 0;
+    const sanitized = sanitizeReps(value);
+    setReps(sanitized);
+    const numValue = parseInt(sanitized) || 0;
     updateSet(exerciseId, set.id, { reps: numValue });
   };
 
   const handleWeightChange = (value: string) => {
     if (readonly) return;
-    setWeight(value);
-    const numValue = parseFloat(value) || 0;
+    const sanitized = sanitizeWeight(value);
+    setWeight(sanitized);
+    const numValue = parseFloat(sanitized) || 0;
     updateSet(exerciseId, set.id, { weight: numValue });
   };
 
@@ -59,6 +62,7 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
         value={reps}
         onChangeText={handleRepsChange}
         keyboardType="numeric"
+        maxLength={3}
         placeholder="0"
         placeholderTextColor={Colors.textTertiary}
         editable={!set.isCompleted && !readonly}
@@ -68,6 +72,7 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
         value={weight}
         onChangeText={handleWeightChange}
         keyboardType="decimal-pad"
+        maxLength={6}
         placeholder="0"
         placeholderTextColor={Colors.textTertiary}
         editable={!set.isCompleted && !readonly}

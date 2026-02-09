@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet } from '@/types/workout';
 import { generateUUID } from '@/lib/utils/uuid';
 import { saveWorkout, getPreviousSetsForExercise } from '@/lib/database/queries/workouts';
+import {
+  MAX_EXERCISES_PER_WORKOUT,
+  MAX_SETS_PER_EXERCISE,
+  MAX_NOTES_LENGTH,
+  clampReps,
+  clampWeight,
+} from '@/lib/utils/validation';
 
 interface WorkoutState {
   activeWorkout: WorkoutWithExercises | null;
@@ -107,11 +114,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       }))
       .filter((e) => e.sets.length > 0);
 
+    // Sanitize notes: trim and truncate
+    const sanitizedNotes = notes?.trim().slice(0, MAX_NOTES_LENGTH) || null;
+
     const finalWorkout: WorkoutWithExercises = {
       ...activeWorkout,
       exercises: filteredExercises,
       duration,
-      notes: notes || null,
+      notes: sanitizedNotes,
       updatedAt: Date.now(),
     };
 
@@ -136,6 +146,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   addExercise: (exerciseName) => {
     const { activeWorkout } = get();
     if (!activeWorkout) return;
+    if (activeWorkout.exercises.length >= MAX_EXERCISES_PER_WORKOUT) return;
 
     const exerciseId = generateUUID();
     const newExercise: ExerciseWithSets = {
@@ -184,6 +195,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
     const exercise = activeWorkout.exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
+    if (exercise.sets.length >= MAX_SETS_PER_EXERCISE) return;
 
     const lastSet = exercise.sets[exercise.sets.length - 1];
 
@@ -211,6 +223,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const { activeWorkout } = get();
     if (!activeWorkout) return;
 
+    // Clamp numeric values
+    const clamped = { ...data };
+    if (clamped.reps !== undefined) clamped.reps = clampReps(clamped.reps);
+    if (clamped.weight !== undefined) clamped.weight = clampWeight(clamped.weight);
+
     set({
       activeWorkout: {
         ...activeWorkout,
@@ -218,7 +235,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           e.id === exerciseId
             ? {
                 ...e,
-                sets: e.sets.map((s) => (s.id === setId ? { ...s, ...data } : s)),
+                sets: e.sets.map((s) => (s.id === setId ? { ...s, ...clamped } : s)),
               }
             : e
         ),

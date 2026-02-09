@@ -8,6 +8,13 @@ import { useTemplateStore } from '@/lib/stores/templateStore';
 import { saveTemplate } from '@/lib/database/queries/workouts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
+import {
+  MAX_WORKOUT_NAME_LENGTH,
+  MAX_EXERCISES_PER_WORKOUT,
+  MAX_CUSTOM_WORKOUTS,
+  validateWorkoutName,
+  getCustomTemplateCount,
+} from '@/lib/utils/validation';
 
 export default function CreateTemplateScreen() {
   const { name, exercises, setName, removeExercise, reset } = useTemplateStore();
@@ -17,6 +24,13 @@ export default function CreateTemplateScreen() {
   }, []);
 
   const handleAddExercise = () => {
+    if (exercises.length >= MAX_EXERCISES_PER_WORKOUT) {
+      Alert.alert(
+        'Exercise Limit',
+        `Maximum ${MAX_EXERCISES_PER_WORKOUT} exercises per workout.`
+      );
+      return;
+    }
     router.push({
       pathname: '/workout/add-exercise',
       params: { mode: 'template' },
@@ -24,13 +38,22 @@ export default function CreateTemplateScreen() {
   };
 
   const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert('Name Required', 'Give your workout a name.');
+    const nameError = validateWorkoutName(name);
+    if (nameError) {
+      Alert.alert('Name Required', nameError);
       return;
     }
 
     if (exercises.length === 0) {
       Alert.alert('Add Exercises', 'Add at least one exercise to your workout.');
+      return;
+    }
+
+    if (getCustomTemplateCount() >= MAX_CUSTOM_WORKOUTS) {
+      Alert.alert(
+        'Workout Limit Reached',
+        `You can have up to ${MAX_CUSTOM_WORKOUTS} custom workouts. Delete one to create a new one.`
+      );
       return;
     }
 
@@ -81,11 +104,15 @@ export default function CreateTemplateScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Name Input */}
-          <Text style={styles.label}>Workout Name</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Workout Name</Text>
+            <Text style={styles.charCounter}>{name.length}/{MAX_WORKOUT_NAME_LENGTH}</Text>
+          </View>
           <Input
             placeholder="e.g. Push Day, Leg Day, Upper Body"
             value={name}
             onChangeText={setName}
+            maxLength={MAX_WORKOUT_NAME_LENGTH}
             style={styles.nameInput}
           />
 
@@ -93,7 +120,7 @@ export default function CreateTemplateScreen() {
           <View style={styles.exercisesHeader}>
             <Text style={styles.label}>Exercises</Text>
             <Text style={styles.exerciseCount}>
-              {exercises.length} added
+              {exercises.length}/{MAX_EXERCISES_PER_WORKOUT}
             </Text>
           </View>
 
@@ -182,13 +209,22 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xxl,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
   label: {
     fontSize: Typography.fontSize.caption,
     color: Colors.textTertiary,
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
+  },
+  charCounter: {
+    fontSize: Typography.fontSize.caption,
+    color: Colors.textTertiary,
   },
   nameInput: {
     marginBottom: Spacing.lg,

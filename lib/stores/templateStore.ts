@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { MAX_EXERCISES_PER_WORKOUT } from '@/lib/utils/validation';
 
 interface TemplateExercise {
   name: string;
@@ -25,6 +26,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   addExercise: (name, muscleGroup, category) => {
     const { exercises } = get();
+    if (exercises.length >= MAX_EXERCISES_PER_WORKOUT) return;
     // Don't add duplicates
     if (exercises.some((e) => e.name === name)) return;
     set({ exercises: [...exercises, { name, muscleGroup, category }] });
