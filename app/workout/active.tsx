@@ -90,7 +90,7 @@ export default function ActiveWorkoutScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Button title="Cancel" onPress={handleCancel} variant="text" />
+          <Button title="Back" onPress={() => router.back()} variant="text" />
           <View style={styles.headerCenter}>
             <Text style={styles.workoutName}>{activeWorkout.name}</Text>
             <Text style={styles.timer}>{formatDuration(elapsed)}</Text>
@@ -112,6 +112,13 @@ export default function ActiveWorkoutScreen() {
             onPress={handleAddExercise}
             variant="secondary"
             style={styles.addButton}
+          />
+
+          <Button
+            title="Cancel Workout"
+            onPress={handleCancel}
+            variant="destructive"
+            style={styles.cancelButton}
           />
         </ScrollView>
       </View>
@@ -159,5 +166,8 @@ const styles = StyleSheet.create({
   },
   addButton: {
     marginTop: Spacing.sm,
+  },
+  cancelButton: {
+    marginTop: Spacing.xl,
   },
 });

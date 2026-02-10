@@ -4,9 +4,15 @@ import { WorkoutSet } from '@/types/workout';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Colors, Spacing, Typography } from '@/constants';
-import { sanitizeReps, sanitizeWeight } from '@/lib/utils/validation';
+import {
+  sanitizeTimeInput,
+  formatTimeDisplay,
+  timeDigitsToSeconds,
+  secondsToTimeDigits,
+  secondsToTimeDisplay,
+} from '@/lib/utils/validation';
 
-interface SetRowProps {
+interface CardioSetRowProps {
   set: WorkoutSet;
   setNumber: number;
   exerciseId: string;
@@ -14,39 +20,30 @@ interface SetRowProps {
   readonly?: boolean;
 }
 
-export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = false }: SetRowProps) => {
+export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = false }: CardioSetRowProps) => {
   const { updateSet, completeSet, removeSet, getPreviousSetData } = useWorkoutStore();
   const [previousData, setPreviousData] = useState('');
-  const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
-  const [weight, setWeight] = useState(set.weight > 0 ? set.weight.toString() : '');
+  const [timeDigits, setTimeDigits] = useState(secondsToTimeDigits(set.duration));
 
   useEffect(() => {
     const prevSets = getPreviousSetData(exerciseName);
     if (prevSets && prevSets[setNumber - 1]) {
       const prev = prevSets[setNumber - 1];
-      setPreviousData(`${prev.reps} x ${prev.weight}`);
+      setPreviousData(secondsToTimeDisplay(prev.duration));
     }
   }, []);
 
-  const handleRepsChange = (value: string) => {
+  const handleTimeChange = (value: string) => {
     if (readonly) return;
-    const sanitized = sanitizeReps(value);
-    setReps(sanitized);
-    const numValue = parseInt(sanitized) || 0;
-    updateSet(exerciseId, set.id, { reps: numValue });
-  };
-
-  const handleWeightChange = (value: string) => {
-    if (readonly) return;
-    const sanitized = sanitizeWeight(value);
-    setWeight(sanitized);
-    const numValue = parseFloat(sanitized) || 0;
-    updateSet(exerciseId, set.id, { weight: numValue });
+    const sanitized = sanitizeTimeInput(value);
+    setTimeDigits(sanitized);
+    const seconds = timeDigitsToSeconds(sanitized);
+    updateSet(exerciseId, set.id, { duration: seconds });
   };
 
   const handleComplete = () => {
     if (readonly) return;
-    if (parseInt(reps) > 0 && parseFloat(weight) > 0) {
+    if (timeDigitsToSeconds(timeDigits) > 0) {
       completeSet(exerciseId, set.id);
     }
   };
@@ -62,22 +59,12 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
         {previousData || '-'}
       </Text>
       <TextInput
-        style={[styles.input, styles.repsCol]}
-        value={reps}
-        onChangeText={handleRepsChange}
+        style={[styles.input, styles.durationCol]}
+        value={timeDigits ? formatTimeDisplay(timeDigits) : ''}
+        onChangeText={handleTimeChange}
         keyboardType="numeric"
-        maxLength={3}
-        placeholder="0"
-        placeholderTextColor={Colors.textTertiary}
-        editable={!set.isCompleted && !readonly}
-      />
-      <TextInput
-        style={[styles.input, styles.weightCol]}
-        value={weight}
-        onChangeText={handleWeightChange}
-        keyboardType="decimal-pad"
-        maxLength={6}
-        placeholder="0"
+        maxLength={9}
+        placeholder="00:00"
         placeholderTextColor={Colors.textTertiary}
         editable={!set.isCompleted && !readonly}
       />
@@ -132,8 +119,7 @@ const styles = StyleSheet.create({
   },
   setCol: { flex: 0.5 },
   prevCol: { flex: 1.5 },
-  repsCol: { flex: 1, marginHorizontal: 4 },
-  weightCol: { flex: 1.2, marginHorizontal: 4 },
+  durationCol: { flex: 2, marginHorizontal: 4 },
   checkCol: { flex: 0.5, alignItems: 'center' },
   removeCol: { flex: 0.4, alignItems: 'center' },
   removeText: {

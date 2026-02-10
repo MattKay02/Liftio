@@ -28,6 +28,7 @@ interface SetRow {
   set_number: number;
   reps: number;
   weight: number;
+  duration: number;
   is_completed: number;
   created_at: number;
 }
@@ -66,14 +67,15 @@ export const saveWorkout = (workout: WorkoutWithExercises) => {
 
     for (const set of exercise.sets) {
       db.runSync(
-        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, is_completed, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, is_completed, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           set.id,
           exercise.id,
           set.setNumber,
           set.reps,
           set.weight,
+          set.duration ?? 0,
           set.isCompleted ? 1 : 0,
           set.createdAt,
         ]
@@ -251,6 +253,7 @@ const mapSet = (row: SetRow): WorkoutSet => ({
   setNumber: row.set_number,
   reps: row.reps,
   weight: row.weight,
+  duration: row.duration ?? 0,
   isCompleted: row.is_completed === 1,
   createdAt: row.created_at,
 });

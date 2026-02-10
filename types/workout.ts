@@ -24,6 +24,7 @@ export interface WorkoutSet {
   setNumber: number;
   reps: number;
   weight: number;
+  duration: number; // total seconds, used for cardio
   isCompleted: boolean;
   createdAt: number;
 }

@@ -7,6 +7,8 @@ import { WorkoutWithExercises } from '@/types/workout';
 import { getWorkoutById, deleteWorkout } from '@/lib/database/queries/workouts';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { formatDate, formatDuration } from '@/lib/utils/date';
+import { secondsToTimeDisplay } from '@/lib/utils/validation';
+import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WorkoutDetailScreen() {
@@ -75,27 +77,44 @@ export default function WorkoutDetailScreen() {
             <Text style={styles.notes}>{workout.notes}</Text>
           )}
 
-          {workout.exercises.map((exercise) => (
-            <View key={exercise.id} style={styles.exerciseSection}>
-              <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-              <View style={styles.setsTable}>
-                <View style={styles.setsHeaderRow}>
-                  <Text style={[styles.setsHeaderText, styles.setNumCol]}>Set</Text>
-                  <Text style={[styles.setsHeaderText, styles.repsCol]}>Reps</Text>
-                  <Text style={[styles.setsHeaderText, styles.weightCol]}>
-                    Weight ({weightUnit})
-                  </Text>
-                </View>
-                {exercise.sets.map((set, i) => (
-                  <View key={set.id} style={styles.setRow}>
-                    <Text style={[styles.setText, styles.setNumCol]}>{i + 1}</Text>
-                    <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
-                    <Text style={[styles.setText, styles.weightCol]}>{set.weight}</Text>
+          {workout.exercises.map((exercise) => {
+            const isCardio = isCardioExercise(exercise.exerciseName);
+            return (
+              <View key={exercise.id} style={styles.exerciseSection}>
+                <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                <View style={styles.setsTable}>
+                  <View style={styles.setsHeaderRow}>
+                    <Text style={[styles.setsHeaderText, styles.setNumCol]}>Set</Text>
+                    {isCardio ? (
+                      <Text style={[styles.setsHeaderText, styles.durationCol]}>Duration</Text>
+                    ) : (
+                      <>
+                        <Text style={[styles.setsHeaderText, styles.repsCol]}>Reps</Text>
+                        <Text style={[styles.setsHeaderText, styles.weightCol]}>
+                          Weight ({weightUnit})
+                        </Text>
+                      </>
+                    )}
                   </View>
-                ))}
+                  {exercise.sets.map((set, i) => (
+                    <View key={set.id} style={styles.setRow}>
+                      <Text style={[styles.setText, styles.setNumCol]}>{i + 1}</Text>
+                      {isCardio ? (
+                        <Text style={[styles.setText, styles.durationCol]}>
+                          {secondsToTimeDisplay(set.duration)}
+                        </Text>
+                      ) : (
+                        <>
+                          <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
+                          <Text style={[styles.setText, styles.weightCol]}>{set.weight}</Text>
+                        </>
+                      )}
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -200,6 +219,10 @@ const styles = StyleSheet.create({
   },
   weightCol: {
     flex: 1,
+    textAlign: 'center',
+  },
+  durationCol: {
+    flex: 2,
     textAlign: 'center',
   },
 });

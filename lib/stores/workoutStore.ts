@@ -6,9 +6,11 @@ import {
   MAX_EXERCISES_PER_WORKOUT,
   MAX_SETS_PER_EXERCISE,
   MAX_NOTES_LENGTH,
+  MAX_DURATION_SECONDS,
   clampReps,
   clampWeight,
 } from '@/lib/utils/validation';
+import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
 
 interface WorkoutState {
   activeWorkout: WorkoutWithExercises | null;
@@ -54,6 +56,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           setNumber: j + 1,
           reps: 0,
           weight: s.weight,
+          duration: 0,
           isCompleted: false,
           createdAt: now,
         })),
@@ -106,11 +109,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
     const duration = Math.floor((Date.now() - workoutStartTime) / 1000);
 
-    // Filter out sets with 0 reps, then remove exercises with no remaining sets
+    // Filter out sets with 0 reps and 0 duration, then remove exercises with no remaining sets
     const filteredExercises = activeWorkout.exercises
       .map((e) => ({
         ...e,
-        sets: e.sets.filter((s) => s.reps > 0),
+        sets: e.sets.filter((s) => s.reps > 0 || s.duration > 0),
       }))
       .filter((e) => e.sets.length > 0);
 
@@ -163,6 +166,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           setNumber: 1,
           reps: 0,
           weight: 0,
+          duration: 0,
           isCompleted: false,
           createdAt: Date.now(),
         },
@@ -198,13 +202,15 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (exercise.sets.length >= MAX_SETS_PER_EXERCISE) return;
 
     const lastSet = exercise.sets[exercise.sets.length - 1];
+    const isCardio = isCardioExercise(exercise.exerciseName);
 
     const newSet: WorkoutSet = {
       id: generateUUID(),
       exerciseId,
       setNumber: exercise.sets.length + 1,
       reps: 0,
-      weight: lastSet?.weight || 0,
+      weight: isCardio ? 0 : (lastSet?.weight || 0),
+      duration: 0,
       isCompleted: false,
       createdAt: Date.now(),
     };
@@ -227,6 +233,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const clamped = { ...data };
     if (clamped.reps !== undefined) clamped.reps = clampReps(clamped.reps);
     if (clamped.weight !== undefined) clamped.weight = clampWeight(clamped.weight);
+    if (clamped.duration !== undefined) clamped.duration = Math.min(Math.max(Math.round(clamped.duration), 0), MAX_DURATION_SECONDS);
 
     set({
       activeWorkout: {

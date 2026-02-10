@@ -95,14 +95,15 @@ export const initializeDatabase = async () => {
     );
   `);
 
-  // Seed exercise library if empty
-  const count = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM exercise_library'
-  );
-
-  if (count && count.count === 0) {
-    await seedExerciseLibrary(db);
+  // Add duration column to sets (safe migration - no-op if already exists)
+  try {
+    await db.execAsync('ALTER TABLE sets ADD COLUMN duration INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
   }
+
+  // Seed exercise library (inserts any missing exercises)
+  await seedExerciseLibrary(db);
 
   // Initialize settings if not exists
   const settings = db.getFirstSync('SELECT * FROM user_settings WHERE id = 1');
@@ -116,15 +117,25 @@ export const initializeDatabase = async () => {
 };
 
 const seedExerciseLibrary = async (db: SQLite.SQLiteDatabase) => {
-  const exercises = [
+  const exercises = [// BARBELL - Core Compounds
     { name: 'Barbell Back Squat', category: 'Barbell', muscleGroup: 'Legs', equipment: 'Barbell' },
     { name: 'Barbell Bench Press', category: 'Barbell', muscleGroup: 'Chest', equipment: 'Barbell' },
     { name: 'Barbell Deadlift', category: 'Barbell', muscleGroup: 'Back', equipment: 'Barbell' },
     { name: 'Barbell Overhead Press', category: 'Barbell', muscleGroup: 'Shoulders', equipment: 'Barbell' },
     { name: 'Barbell Row', category: 'Barbell', muscleGroup: 'Back', equipment: 'Barbell' },
+    
+    // BARBELL - Variations
     { name: 'Barbell Front Squat', category: 'Barbell', muscleGroup: 'Legs', equipment: 'Barbell' },
     { name: 'Barbell Romanian Deadlift', category: 'Barbell', muscleGroup: 'Legs', equipment: 'Barbell' },
     { name: 'Barbell Hip Thrust', category: 'Barbell', muscleGroup: 'Legs', equipment: 'Barbell' },
+    { name: 'Barbell Incline Bench Press', category: 'Barbell', muscleGroup: 'Chest', equipment: 'Barbell' },
+    { name: 'Barbell Curl', category: 'Barbell', muscleGroup: 'Arms', equipment: 'Barbell' },
+    { name: 'Barbell Sumo Deadlift', category: 'Barbell', muscleGroup: 'Legs', equipment: 'Barbell' },
+    { name: 'Barbell Close-Grip Bench Press', category: 'Barbell', muscleGroup: 'Chest', equipment: 'Barbell' },
+    { name: 'Barbell Good Morning', category: 'Barbell', muscleGroup: 'Back', equipment: 'Barbell' },
+    { name: 'Barbell Shrug', category: 'Barbell', muscleGroup: 'Back', equipment: 'Barbell' },
+    
+    // DUMBBELL - Essential
     { name: 'Dumbbell Bench Press', category: 'Dumbbell', muscleGroup: 'Chest', equipment: 'Dumbbell' },
     { name: 'Dumbbell Shoulder Press', category: 'Dumbbell', muscleGroup: 'Shoulders', equipment: 'Dumbbell' },
     { name: 'Dumbbell Row', category: 'Dumbbell', muscleGroup: 'Back', equipment: 'Dumbbell' },
@@ -133,26 +144,114 @@ const seedExerciseLibrary = async (db: SQLite.SQLiteDatabase) => {
     { name: 'Dumbbell Lateral Raise', category: 'Dumbbell', muscleGroup: 'Shoulders', equipment: 'Dumbbell' },
     { name: 'Dumbbell Goblet Squat', category: 'Dumbbell', muscleGroup: 'Legs', equipment: 'Dumbbell' },
     { name: 'Dumbbell Lunge', category: 'Dumbbell', muscleGroup: 'Legs', equipment: 'Dumbbell' },
+    
+    // DUMBBELL - Variations
+    { name: 'Dumbbell Incline Bench Press', category: 'Dumbbell', muscleGroup: 'Chest', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Chest Fly', category: 'Dumbbell', muscleGroup: 'Chest', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Front Raise', category: 'Dumbbell', muscleGroup: 'Shoulders', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Rear Delt Fly', category: 'Dumbbell', muscleGroup: 'Shoulders', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Hammer Curl', category: 'Dumbbell', muscleGroup: 'Arms', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Shrug', category: 'Dumbbell', muscleGroup: 'Back', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Romanian Deadlift', category: 'Dumbbell', muscleGroup: 'Legs', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Bulgarian Split Squat', category: 'Dumbbell', muscleGroup: 'Legs', equipment: 'Dumbbell' },
+    { name: 'Dumbbell Skull Crusher', category: 'Dumbbell', muscleGroup: 'Arms', equipment: 'Dumbbell' },
+    
+    // MACHINES - Essential
     { name: 'Leg Press', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
     { name: 'Leg Curl', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
     { name: 'Leg Extension', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
     { name: 'Lat Pulldown', category: 'Machine', muscleGroup: 'Back', equipment: 'Machine' },
     { name: 'Cable Row', category: 'Machine', muscleGroup: 'Back', equipment: 'Machine' },
     { name: 'Chest Press Machine', category: 'Machine', muscleGroup: 'Chest', equipment: 'Machine' },
+    
+    // MACHINES - Additional
+    { name: 'Smith Machine Squat', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
+    { name: 'Smith Machine Bench Press', category: 'Machine', muscleGroup: 'Chest', equipment: 'Machine' },
+    { name: 'Hack Squat', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
+    { name: 'Calf Raise Machine', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
+    { name: 'Pec Deck Fly', category: 'Machine', muscleGroup: 'Chest', equipment: 'Machine' },
+    { name: 'Shoulder Press Machine', category: 'Machine', muscleGroup: 'Shoulders', equipment: 'Machine' },
+    { name: 'Hip Abductor Machine', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
+    { name: 'Hip Adductor Machine', category: 'Machine', muscleGroup: 'Legs', equipment: 'Machine' },
+    { name: 'Preacher Curl Machine', category: 'Machine', muscleGroup: 'Arms', equipment: 'Machine' },
+    
+    // BODYWEIGHT - Essential
     { name: 'Pull-up', category: 'Bodyweight', muscleGroup: 'Back', equipment: 'Bodyweight' },
     { name: 'Push-up', category: 'Bodyweight', muscleGroup: 'Chest', equipment: 'Bodyweight' },
     { name: 'Dip', category: 'Bodyweight', muscleGroup: 'Chest', equipment: 'Bodyweight' },
     { name: 'Chin-up', category: 'Bodyweight', muscleGroup: 'Back', equipment: 'Bodyweight' },
+    
+    // BODYWEIGHT - Additional
+    { name: 'Bodyweight Squat', category: 'Bodyweight', muscleGroup: 'Legs', equipment: 'Bodyweight' },
+    { name: 'Plank', category: 'Bodyweight', muscleGroup: 'Core', equipment: 'Bodyweight' },
+    { name: 'Sit-up', category: 'Bodyweight', muscleGroup: 'Core', equipment: 'Bodyweight' },
+    { name: 'Lunge', category: 'Bodyweight', muscleGroup: 'Legs', equipment: 'Bodyweight' },
+    { name: 'Glute Bridge', category: 'Bodyweight', muscleGroup: 'Legs', equipment: 'Bodyweight' },
+    { name: 'Hanging Leg Raise', category: 'Bodyweight', muscleGroup: 'Core', equipment: 'Bodyweight' },
+    { name: 'Mountain Climber', category: 'Bodyweight', muscleGroup: 'Core', equipment: 'Bodyweight' },
+    { name: 'Burpee', category: 'Bodyweight', muscleGroup: 'Cardio', equipment: 'Bodyweight' },
+    
+    // CABLE - Essential
     { name: 'Cable Fly', category: 'Cable', muscleGroup: 'Chest', equipment: 'Cable' },
     { name: 'Cable Tricep Pushdown', category: 'Cable', muscleGroup: 'Arms', equipment: 'Cable' },
     { name: 'Cable Bicep Curl', category: 'Cable', muscleGroup: 'Arms', equipment: 'Cable' },
     { name: 'Cable Face Pull', category: 'Cable', muscleGroup: 'Shoulders', equipment: 'Cable' },
+    
+    // CABLE - Additional
+    { name: 'Cable Lateral Raise', category: 'Cable', muscleGroup: 'Shoulders', equipment: 'Cable' },
+    { name: 'Cable Rope Hammer Curl', category: 'Cable', muscleGroup: 'Arms', equipment: 'Cable' },
+    { name: 'Cable Woodchop', category: 'Cable', muscleGroup: 'Core', equipment: 'Cable' },
+    { name: 'Cable Crunch', category: 'Cable', muscleGroup: 'Core', equipment: 'Cable' },
+    { name: 'Cable Overhead Tricep Extension', category: 'Cable', muscleGroup: 'Arms', equipment: 'Cable' },
+    { name: 'Cable Upright Row', category: 'Cable', muscleGroup: 'Shoulders', equipment: 'Cable' },
+    
+    // EZ BAR
+    { name: 'EZ Bar Curl', category: 'EZ Bar', muscleGroup: 'Arms', equipment: 'EZ Bar' },
+    { name: 'EZ Bar Skull Crusher', category: 'EZ Bar', muscleGroup: 'Arms', equipment: 'EZ Bar' },
+    { name: 'EZ Bar Preacher Curl', category: 'EZ Bar', muscleGroup: 'Arms', equipment: 'EZ Bar' },
+    
+    // TRAP BAR
+    { name: 'Trap Bar Deadlift', category: 'Trap Bar', muscleGroup: 'Legs', equipment: 'Trap Bar' },
+    
+    // KETTLEBELL
+    { name: 'Kettlebell Swing', category: 'Kettlebell', muscleGroup: 'Legs', equipment: 'Kettlebell' },
+    { name: 'Kettlebell Goblet Squat', category: 'Kettlebell', muscleGroup: 'Legs', equipment: 'Kettlebell' },
+    { name: 'Kettlebell Turkish Get-Up', category: 'Kettlebell', muscleGroup: 'Core', equipment: 'Kettlebell' },
+    
+    // CARDIO - Machine-based
+    { name: 'Treadmill Running', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Treadmill' },
+    { name: 'Treadmill Walking', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Treadmill' },
+    { name: 'Treadmill Incline Walking', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Treadmill' },
+    { name: 'Treadmill Sprints', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Treadmill' },
+    { name: 'Stationary Bike', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Bike' },
+    { name: 'Assault Bike', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Bike' },
+    { name: 'Spin Bike', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Bike' },
+    { name: 'Rowing Machine', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Rowing Machine' },
+    { name: 'Elliptical', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Elliptical' },
+    { name: 'Stair Climber', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Stair Climber' },
+    { name: 'StairMaster', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'StairMaster' },
+    { name: 'VersaClimber', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'VersaClimber' },
+    { name: 'Ski Erg', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Ski Erg' },
+    
+    // CARDIO - Bodyweight/Outdoor
+    { name: 'Running (Outdoor)', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'None' },
+    { name: 'Walking (Outdoor)', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'None' },
+    { name: 'Jump Rope', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Jump Rope' },
+    { name: 'Box Jumps', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Box' },
+    { name: 'Battle Ropes', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Battle Ropes' },
+    { name: 'Swimming', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Pool' },
+    { name: 'Cycling (Outdoor)', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Bike' },
+    
+    // CARDIO - HIIT/Conditioning
+    { name: 'Sled Push', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Sled' },
+    { name: 'Sled Pull', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Sled' },
+    { name: 'Farmers Walk', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Dumbbells' },
   ];
 
   const now = Date.now();
   for (const exercise of exercises) {
     db.runSync(
-      'INSERT INTO exercise_library (id, name, category, muscle_group, equipment, is_custom, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      'INSERT OR IGNORE INTO exercise_library (id, name, category, muscle_group, equipment, is_custom, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)',
       [generateUUID(), exercise.name, exercise.category, exercise.muscleGroup, exercise.equipment, now]
     );
   }
