@@ -10,24 +10,25 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, Pencil } from 'lucide-react-native';
 import { Colors, Spacing, Typography } from '@/constants';
-import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { WorkoutWithExercises } from '@/types/workout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getTotalWeight, formatWeight } from '@/lib/utils/date';
+import { getTimeSinceString, formatDuration, formatTimeOfDay, getTotalWeight, formatWeight } from '@/lib/utils/date';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DISMISS_THRESHOLD = 120;
 
-interface WorkoutDetailSlideUpProps {
+interface AllWorkoutsSlideUpProps {
   visible: boolean;
-  workout: WorkoutWithExercises | null;
+  workouts: WorkoutWithExercises[];
   onClose: () => void;
+  onViewWorkout: (workout: WorkoutWithExercises) => void;
+  onEditWorkout: (workout: WorkoutWithExercises) => void;
 }
 
-export const WorkoutDetailSlideUp = ({ visible, workout, onClose }: WorkoutDetailSlideUpProps) => {
+export const AllWorkoutsSlideUp = ({ visible, workouts, onClose, onViewWorkout, onEditWorkout }: AllWorkoutsSlideUpProps) => {
   const insets = useSafeAreaInsets();
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -59,7 +60,6 @@ export const WorkoutDetailSlideUp = ({ visible, workout, onClose }: WorkoutDetai
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only capture downward drags when scroll is at top
         return gestureState.dy > 10 && scrollOffset.current <= 0;
       },
       onPanResponderMove: (_, gestureState) => {
@@ -82,18 +82,6 @@ export const WorkoutDetailSlideUp = ({ visible, workout, onClose }: WorkoutDetai
     })
   ).current;
 
-  if (!workout) {
-    return null;
-  }
-
-  const durationMinutes = workout.duration ? Math.floor(workout.duration / 60) : 0;
-  const durationSeconds = workout.duration ? workout.duration % 60 : 0;
-  const formattedDate = new Date(workout.date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-
   return (
     <Modal
       visible={visible}
@@ -103,10 +91,8 @@ export const WorkoutDetailSlideUp = ({ visible, workout, onClose }: WorkoutDetai
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        {/* Dimmed background */}
         <Pressable style={styles.dimmedBackground} onPress={dismissPanel} />
 
-        {/* Slide-up panel */}
         <Animated.View
           style={[
             styles.panel,
@@ -114,48 +100,65 @@ export const WorkoutDetailSlideUp = ({ visible, workout, onClose }: WorkoutDetai
           ]}
           {...panResponder.panHandlers}
         >
-          {/* Handle bar */}
           <View style={styles.handleContainer}>
             <View style={styles.handle} />
           </View>
 
-          {/* Header */}
           <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Text style={styles.workoutName}>{workout.name}</Text>
-              <Text style={styles.metadata}>
-                {durationMinutes}m {durationSeconds}s  •  {formattedDate}
-                {getTotalWeight(workout.exercises) > 0 ? `  •  ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}
-              </Text>
-              {workout.notes && <Text style={styles.notes}>{workout.notes}</Text>}
-            </View>
+            <Text style={styles.title}>All Workouts</Text>
             <Pressable onPress={dismissPanel} style={styles.closeButton} hitSlop={8}>
               <X size={22} color={Colors.textSecondary} />
             </Pressable>
           </View>
 
-          {/* Exercise list */}
-          {workout.exercises.length > 0 ? (
-            <ScrollView
-              style={styles.exercisesContainer}
-              showsVerticalScrollIndicator={false}
-              onScroll={(e) => {
-                scrollOffset.current = e.nativeEvent.contentOffset.y;
-              }}
-              scrollEventThrottle={16}
-            >
-              {workout.exercises.map((exercise) => (
-                <View key={exercise.id} style={styles.exerciseWrapper}>
-                  <ExerciseCard exercise={exercise} readonly />
+          <ScrollView
+            style={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            onScroll={(e) => {
+              scrollOffset.current = e.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={16}
+          >
+            {workouts.map((workout) => (
+              <Pressable
+                key={workout.id}
+                style={({ pressed }) => [
+                  styles.workoutCard,
+                  pressed && styles.workoutCardPressed,
+                ]}
+                onPress={() => {
+                  dismissPanel();
+                  setTimeout(() => onViewWorkout(workout), 300);
+                }}
+              >
+                <View style={styles.workoutCardContent}>
+                  <Text style={styles.workoutName}>{workout.name}</Text>
+                  <Text style={styles.workoutMeta}>
+                    {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
+                    {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
+                    {getTotalWeight(workout.exercises) > 0 ? ` \u00B7 ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}
+                  </Text>
+                  <Text style={styles.workoutDate}>
+                    {getTimeSinceString(workout.date)} {'\u00B7'} {formatTimeOfDay(workout.date)}
+                  </Text>
                 </View>
-              ))}
-              <View style={{ height: Spacing.xl }} />
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No exercises logged</Text>
-            </View>
-          )}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.editButton,
+                    pressed && styles.editButtonPressed,
+                  ]}
+                  onPress={() => {
+                    dismissPanel();
+                    setTimeout(() => onEditWorkout(workout), 300);
+                  }}
+                  hitSlop={8}
+                >
+                  <Pencil size={16} color={Colors.textSecondary} />
+                </Pressable>
+              </Pressable>
+            ))}
+            <View style={{ height: Spacing.xl }} />
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
@@ -173,10 +176,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   panel: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: Colors.bg,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '85%',
+    maxHeight: '90%',
   },
   handleContainer: {
     alignItems: 'center',
@@ -192,49 +195,61 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  headerContent: {
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  workoutName: {
+  title: {
     fontSize: Typography.fontSize.title,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  metadata: {
-    fontSize: Typography.fontSize.body,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  notes: {
-    fontSize: Typography.fontSize.body,
-    color: Colors.textTertiary,
-    fontStyle: 'italic',
   },
   closeButton: {
     padding: Spacing.sm,
   },
-  exercisesContainer: {
+  listContainer: {
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
   },
-  exerciseWrapper: {
-    marginBottom: Spacing.md,
-  },
-  emptyState: {
-    justifyContent: 'center',
+  workoutCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.xl,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-  emptyStateText: {
-    fontSize: Typography.fontSize.body,
+  workoutCardPressed: {
+    opacity: 0.7,
+  },
+  workoutCardContent: {
+    flex: 1,
+  },
+  workoutName: {
+    fontSize: Typography.fontSize.bodyLg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  workoutMeta: {
+    fontSize: Typography.fontSize.caption,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  workoutDate: {
+    fontSize: Typography.fontSize.caption,
     color: Colors.textTertiary,
+  },
+  editButton: {
+    padding: Spacing.sm,
+    borderRadius: 8,
+    backgroundColor: Colors.bgElevated,
+  },
+  editButtonPressed: {
+    opacity: 0.6,
   },
 });

@@ -2,17 +2,18 @@
 
 ## Project Overview
 
-Minimalist gym tracking app built with React Native + Expo. Core philosophy: speed, simplicity, zero distractions. Clean greyscale interface, local-first, offline-capable.
+Minimalist gym tracking app built with React Native + Expo. Core philosophy: speed, simplicity, zero distractions. Dark interface, local-first, offline-capable.
 
 **Target:** iOS (primary), Android (secondary)
 
 ## Tech Stack
 
 ```
-React Native 0.76+ / Expo SDK 52+ / TypeScript (strict)
+React Native 0.81+ / Expo SDK 54+ / TypeScript (strict)
 Routing: Expo Router (file-based)
 State: Zustand
-Database: Expo SQLite
+Database: Expo SQLite (see DATABASE.md for schema and queries)
+Gestures: react-native-gesture-handler + react-native-reanimated
 UI: Custom components (no UI library)
 Icons: Lucide React Native (minimal use)
 ```
@@ -21,79 +22,71 @@ Icons: Lucide React Native (minimal use)
 
 ```
 app/                        # Expo Router
-├── (tabs)/                 # Tab navigation: index, history, settings
-├── workout/                # active, add-exercise, [id], finish
-├── _layout.tsx
+├── (tabs)/                 # Tab navigation: index (My Workouts), logs (History)
+├── workout/                # active, add-exercise, [id], finish, create-template
+├── _layout.tsx             # Root layout (GestureHandlerRootView wrapper)
 components/
-├── ui/                     # Button, Input, Card, Checkbox, Divider
-├── workout/                # ExerciseCard, SetRow, RestTimer
-├── shared/                 # Header, EmptyState
+├── ui/                     # Button, Input, Checkbox
+├── workout/                # ExerciseCard, SetRow, CardioSetRow
+├── shared/                 # Header, CalendarView, WorkoutDetailSlideUp, SettingsMenu
 lib/
 ├── database/
-│   ├── db.ts               # SQLite init
-│   ├── schema.ts           # Table schemas
-│   ├── migrations.ts
-│   └── queries/            # workouts, exercises, sets, exerciseLibrary
+│   ├── db.ts               # SQLite init + seed
+│   └── queries/            # workouts, exerciseLibrary
 ├── stores/                 # workoutStore, settingsStore (Zustand)
-└── utils/                  # date, uuid, units
-constants/                  # Colors, Typography, Spacing, Components
-types/                      # workout, exercise, database
+└── utils/                  # date, uuid, validation
+constants/                  # Colors, Typography, Spacing
+types/                      # workout.ts
 ```
 
 ## Design System
 
-### Colors - Greyscale Only
+### Colors - Dark Theme
+
+Defined in `constants/Colors.ts`. The app uses a dark UI.
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| white | #FFFFFF | Main background |
-| grey50 | #FAFAFA | Card background |
-| grey100 | #F5F5F5 | Input background |
-| grey200 | #E5E7EB | Borders, dividers |
-| grey300 | #D1D5DB | Input borders |
-| grey400 | #9CA3AF | Tertiary text, placeholders |
-| grey500 | #6B7280 | Completed states |
-| grey600 | #4B5563 | Secondary text |
-| grey800 | #111827 | Primary buttons |
-| grey900 | #1A1A1A | Primary text |
-| red600 | #DC2626 | Delete, errors |
-| green600 | #16A34A | Success (rare) |
+| `bg` | #1A1A1A | Main background |
+| `bgCard` | #2D2D2D | Card backgrounds |
+| `bgElevated` | #404040 | Inputs, elevated surfaces |
+| `textPrimary` | #FFFFFF | Headers, exercise names, primary text |
+| `textSecondary` | #9CA3AF | Labels, meta info |
+| `textTertiary` | #6B7280 | Timestamps, previous data, placeholders |
+| `border` | #404040 | Borders, dividers |
+| `accent` | #FFFFFF | Primary button background |
+| `accentText` | #1A1A1A | Text on accent buttons |
+| `highlight` | #4B5563 | Calendar selection highlight |
+| `red600` | #DC2626 | Delete actions, errors, destructive |
+| `green600` | #16A34A | Completed set checkmarks, success states |
+
+Completed sets use `rgba(22, 163, 74, 0.08)` row background and `rgba(22, 163, 74, 0.15)` checkbox background.
 
 ### Typography
 
-- System fonts (SF Pro / Roboto)
-- Sizes: display(28), title(20), bodyLg(16), body(14), caption(12)
-- Weights: regular(400), semibold(600)
+Defined in `constants/Typography.ts`. System fonts (SF Pro / Roboto).
+
+| Size | Value | Usage |
+|------|-------|-------|
+| `display` | 28 | Screen titles |
+| `title` | 20 | Section headers, exercise names |
+| `bodyLg` | 16 | Workout names, prominent text |
+| `body` | 14 | General content |
+| `caption` | 12 | Labels, meta, timestamps |
+
+Weights: `regular` (400), `semibold` (600)
 
 ### Spacing (8px grid)
 
-xs(4), sm(8), md(16), lg(24), xl(32), xxl(48)
+`xs`(4), `sm`(8), `md`(16), `lg`(24), `xl`(32), `xxl`(48)
 
 ### Component Specs
 
-- **Buttons:** borderRadius 12, minHeight 48, primary=grey800, secondary=transparent
-- **Inputs:** borderRadius 8, minHeight 44, bg=grey100, border=grey300
-- **Cards:** borderRadius 12, bg=grey50, border=grey200, padding 16
-
-## Database Schema
-
-```sql
--- workouts: id(TEXT PK), name, date(INT), duration(INT), notes, is_template(INT), created_at, updated_at
--- exercises: id(TEXT PK), workout_id(FK), exercise_name, order_index, notes, created_at
--- sets: id(TEXT PK), exercise_id(FK), set_number, reps(INT), weight(REAL), is_completed(INT), created_at
--- exercise_library: id(TEXT PK), name(UNIQUE), category, muscle_group, equipment, is_custom(INT), created_at
--- user_settings: id(INT PK CHECK=1), weight_unit, default_rest_timer(INT), theme, created_at, updated_at
-```
-
-Key indexes: workouts(date DESC), exercises(workout_id, order_index), sets(exercise_id, set_number), exercise_library(category, name)
-
-## TypeScript Types
-
-See `types/workout.ts` for full definitions. Key interfaces:
-- `Workout`, `Exercise`, `Set`, `ExerciseLibraryItem`, `UserSettings`
-- `WorkoutWithExercises` (compound), `ExerciseWithSets` (compound)
-- Categories: `'Barbell' | 'Dumbbell' | 'Machine' | 'Bodyweight' | 'Cable' | 'Other'`
-- Weight units: `'lbs' | 'kg'`
+- **Buttons:** borderRadius 12, minHeight 48, primary bg=`accent` (#FFF), text variant has no bg
+- **Inputs:** borderRadius 8, bg=`bgElevated` (#404040), border=`border` (#404040)
+- **Cards:** borderRadius 12, bg=`bgCard` (#2D2D2D), border=`border` (#404040), padding 16
+- **Checkbox:** 24x24, borderRadius 12, checked=green border + green tint bg, checkmark=#16A34A
+- **Swipe-to-delete:** ReanimatedSwipeable, swipe right to reveal 80px red delete button
 
 ## Development Guidelines
 
@@ -108,16 +101,22 @@ See `types/workout.ts` for full definitions. Key interfaces:
 - Constants: PascalCase files, UPPER_CASE values
 
 ### Component Structure
-Imports → Types → Component (hooks, effects, handlers, render) → StyleSheet
+Imports -> Types -> Component (hooks, effects, handlers, render) -> StyleSheet
 
 ### State Management
-- Zustand for global state (workout, settings)
-- useState for local UI state
+- Zustand for global state (active workout, settings)
+- `useState` for local UI state and edit mode (e.g. workout detail editing)
 - Keep state close to usage; avoid prop drilling
+- Active workout state lives in `workoutStore` — never use it for editing saved workouts
+
+### Gestures
+- App wrapped in `GestureHandlerRootView` (`_layout.tsx`)
+- Screens with swipeable rows use `ScrollView` from `react-native-gesture-handler` (not from `react-native`) to avoid gesture conflicts
+- Swipe-to-delete uses `ReanimatedSwipeable` with `renderLeftActions`
 
 ### Database
+- See `DATABASE.md` for full schema, queries, and patterns
 - All queries in `lib/database/queries/`
-- Use prepared statements for repeated queries
 - Handle errors with try/catch + Alert.alert
 
 ### Performance
@@ -125,10 +124,11 @@ Imports → Types → Component (hooks, effects, handlers, render) → StyleShee
 - useCallback to avoid inline functions in render
 - FlatList with keyExtractor + getItemLayout
 - SQLite indexes on frequent queries
-- Lazy load / paginate history
 
-## Phase 1 Scope
+## Navigation Flow
 
-**Included:** Workout logging, exercise library, history, templates, settings (units, rest timer)
-
-**Not included:** Cloud sync, accounts, social, charts, custom exercises, health integrations, dark mode
+- **My Workouts tab** (`index.tsx`): Custom templates. Press card -> view-only detail. "Start" button -> start active workout.
+- **Logs tab** (`logs.tsx`): Calendar + recent workouts. Press card -> view-only detail. Pencil -> edit mode.
+- **Workout detail** (`workout/[id].tsx`): View mode by default. Edit button switches to inline editing (local state, not workoutStore). Save persists to DB.
+- **Active workout** (`workout/active.tsx`): Timer, live set tracking, add/remove exercises/sets, finish flow.
+- Starting a new active workout only happens from the My Workouts tab.

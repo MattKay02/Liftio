@@ -27,3 +27,26 @@ export const formatDate = (timestamp: number): string => {
     day: 'numeric',
   });
 };
+
+export const formatTimeOfDay = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+export const getTotalWeight = (exercises: { sets: { reps: number; weight: number }[] }[]): number => {
+  return exercises.reduce(
+    (total, e) => total + e.sets.reduce((sum, s) => sum + s.reps * s.weight, 0),
+    0
+  );
+};
+
+export const formatWeight = (value: number, unit: string): string => {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k ${unit}`;
+  }
+  return `${Math.round(value)} ${unit}`;
+};

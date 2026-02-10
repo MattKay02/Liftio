@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';

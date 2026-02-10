@@ -9,10 +9,12 @@ import { getAllExercises, getMuscleGroups, getCategories, addCustomExercise, exe
 import { ExerciseLibraryItem } from '@/types/workout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_EXERCISES_PER_WORKOUT, MAX_EXERCISE_NAME_LENGTH, validateExerciseName } from '@/lib/utils/validation';
+import { setPendingExercise } from '@/lib/utils/pendingExercise';
 
 export default function AddExerciseScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const isTemplateMode = params.mode === 'template';
+  const isEditMode = params.mode === 'edit';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string | null>(null);
@@ -63,6 +65,12 @@ export default function AddExerciseScreen() {
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
 
   const handleSelect = useCallback((exercise: ExerciseLibraryItem) => {
+    if (isEditMode) {
+      setPendingExercise({ name: exercise.name });
+      router.back();
+      return;
+    }
+
     const currentCount = isTemplateMode
       ? templateExercises.length
       : (activeWorkout?.exercises.length ?? 0);
@@ -81,7 +89,7 @@ export default function AddExerciseScreen() {
       addWorkoutExercise(exercise.name);
     }
     router.back();
-  }, [isTemplateMode, templateExercises.length, activeWorkout?.exercises.length, addTemplateExercise, addWorkoutExercise]);
+  }, [isEditMode, isTemplateMode, templateExercises.length, activeWorkout?.exercises.length, addTemplateExercise, addWorkoutExercise]);
 
   const handleMuscleGroupPress = (mg: string) => {
     if (selectedMuscleGroup === mg) {

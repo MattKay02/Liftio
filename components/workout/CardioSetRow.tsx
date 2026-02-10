@@ -11,6 +11,8 @@ import {
   secondsToTimeDigits,
   secondsToTimeDisplay,
 } from '@/lib/utils/validation';
+import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { SharedValue } from 'react-native-reanimated';
 
 interface CardioSetRowProps {
   set: WorkoutSet;
@@ -43,16 +45,32 @@ export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, readonl
 
   const handleComplete = () => {
     if (readonly) return;
+    if (set.isCompleted) {
+      completeSet(exerciseId, set.id);
+      return;
+    }
     if (timeDigitsToSeconds(timeDigits) > 0) {
       completeSet(exerciseId, set.id);
     }
   };
 
-  const handleRemove = () => {
-    removeSet(exerciseId, set.id);
-  };
+  const renderLeftActions = (
+    _progress: SharedValue<number>,
+    _translation: SharedValue<number>,
+    swipeableMethods: SwipeableMethods
+  ) => (
+    <Pressable
+      style={styles.deleteButton}
+      onPress={() => {
+        swipeableMethods.close();
+        removeSet(exerciseId, set.id);
+      }}
+    >
+      <Text style={styles.deleteText}>Delete</Text>
+    </Pressable>
+  );
 
-  return (
+  const rowContent = (
     <View style={[styles.row, set.isCompleted && styles.completedRow]}>
       <Text style={[styles.text, styles.setCol]}>{setNumber}</Text>
       <Text style={[styles.text, styles.prevCol, styles.prevText]}>
@@ -72,17 +90,26 @@ export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, readonl
         <Checkbox
           checked={set.isCompleted}
           onPress={handleComplete}
-          disabled={set.isCompleted || readonly}
+          disabled={readonly}
         />
       </View>
-      {!readonly && !set.isCompleted ? (
-        <Pressable style={styles.removeCol} onPress={handleRemove} hitSlop={8}>
-          <Text style={styles.removeText}>✕</Text>
-        </Pressable>
-      ) : (
-        <View style={styles.removeCol} />
-      )}
     </View>
+  );
+
+  if (readonly) {
+    return rowContent;
+  }
+
+  return (
+    <ReanimatedSwipeable
+      renderLeftActions={renderLeftActions}
+      overshootLeft={false}
+      leftThreshold={40}
+      friction={2}
+      dragOffsetFromLeftEdge={20}
+    >
+      {rowContent}
+    </ReanimatedSwipeable>
   );
 };
 
@@ -93,9 +120,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs + 2,
     borderBottomWidth: 1,
     borderBottomColor: Colors.bgElevated,
+    backgroundColor: Colors.bgCard,
   },
   completedRow: {
-    opacity: 0.6,
+    backgroundColor: 'rgba(22, 163, 74, 0.08)',
   },
   text: {
     fontSize: Typography.fontSize.body,
@@ -120,10 +148,17 @@ const styles = StyleSheet.create({
   setCol: { flex: 0.5 },
   prevCol: { flex: 1.5 },
   durationCol: { flex: 2, marginHorizontal: 4 },
-  checkCol: { flex: 0.5, alignItems: 'center' },
-  removeCol: { flex: 0.4, alignItems: 'center' },
-  removeText: {
+  checkCol: { flex: 0.6, alignItems: 'center' },
+  deleteButton: {
+    backgroundColor: Colors.red600,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+  },
+  deleteText: {
+    color: '#FFFFFF',
     fontSize: Typography.fontSize.caption,
-    color: Colors.textTertiary,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });

@@ -6,19 +6,25 @@ import { Colors, Typography, Spacing } from '@/constants';
 import { Header } from '@/components/shared/Header';
 import { CalendarView } from '@/components/shared/CalendarView';
 import { WorkoutDetailSlideUp } from '@/components/shared/WorkoutDetailSlideUp';
+import { AllWorkoutsSlideUp } from '@/components/shared/AllWorkoutsSlideUp';
 import { SettingsMenu } from '@/components/shared/SettingsMenu';
 import { WorkoutWithExercises } from '@/types/workout';
 import { getAllWorkouts, getCompletedWorkouts } from '@/lib/database/queries/workouts';
-import { getTimeSinceString, formatDuration } from '@/lib/utils/date';
-import { Pencil } from 'lucide-react-native';
+import { getTimeSinceString, formatDuration, formatTimeOfDay, getTotalWeight, formatWeight } from '@/lib/utils/date';
+import { useSettingsStore } from '@/lib/stores/settingsStore';
+import { Pencil, ChevronDown, ChevronUp } from 'lucide-react-native';
 
 export default function LogsScreen() {
+  const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [workouts, setWorkouts] = useState<(WorkoutWithExercises & { date: number })[]>([]);
   const [recentWorkouts, setRecentWorkouts] = useState<WorkoutWithExercises[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutWithExercises | null>(null);
   const [showDetailSlideUp, setShowDetailSlideUp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  const [allCompletedWorkouts, setAllCompletedWorkouts] = useState<WorkoutWithExercises[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -30,7 +36,8 @@ export default function LogsScreen() {
     try {
       const allWorkouts = getAllWorkouts();
       setWorkouts(allWorkouts);
-      setRecentWorkouts(getCompletedWorkouts(20));
+      setRecentWorkouts(getCompletedWorkouts(6));
+      setAllCompletedWorkouts(getCompletedWorkouts(1000));
     } catch (error) {
       console.error('Failed to load workouts:', error);
     }
@@ -49,19 +56,16 @@ export default function LogsScreen() {
     }
   };
 
-  const handleStartFromWorkout = (workout: WorkoutWithExercises) => {
-    router.push({
-      pathname: '/workout/active',
-      params: { templateId: workout.id },
-    });
-  };
-
-  const handleEditWorkout = (workout: WorkoutWithExercises) => {
+  const handleViewWorkout = (workout: WorkoutWithExercises) => {
     router.push(`/workout/${workout.id}`);
   };
 
+  const handleEditWorkout = (workout: WorkoutWithExercises) => {
+    router.push(`/workout/${workout.id}?edit=true`);
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header showSettings={true} onSettingsPress={() => setShowSettings(true)} />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -73,24 +77,37 @@ export default function LogsScreen() {
 
         {recentWorkouts.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Recent</Text>
-            {recentWorkouts.map((workout) => (
+            <Pressable
+              style={styles.sectionHeader}
+              onPress={() => setIsExpanded(!isExpanded)}
+            >
+              <Text style={styles.sectionLabel}>Recent</Text>
+              {recentWorkouts.length > 1 && (
+                isExpanded ? (
+                  <ChevronUp size={16} color={Colors.textTertiary} />
+                ) : (
+                  <ChevronDown size={16} color={Colors.textTertiary} />
+                )
+              )}
+            </Pressable>
+            {(isExpanded ? recentWorkouts : recentWorkouts.slice(0, 1)).map((workout) => (
               <Pressable
                 key={workout.id}
                 style={({ pressed }) => [
                   styles.workoutCard,
                   pressed && styles.workoutCardPressed,
                 ]}
-                onPress={() => handleStartFromWorkout(workout)}
+                onPress={() => handleViewWorkout(workout)}
               >
                 <View style={styles.workoutCardContent}>
                   <Text style={styles.workoutName}>{workout.name}</Text>
                   <Text style={styles.workoutMeta}>
                     {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
                     {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
+                    {getTotalWeight(workout.exercises) > 0 ? ` \u00B7 ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}
                   </Text>
                   <Text style={styles.workoutDate}>
-                    {getTimeSinceString(workout.date)}
+                    {getTimeSinceString(workout.date)} {'\u00B7'} {formatTimeOfDay(workout.date)}
                   </Text>
                 </View>
                 <Pressable
@@ -105,6 +122,14 @@ export default function LogsScreen() {
                 </Pressable>
               </Pressable>
             ))}
+            {isExpanded && allCompletedWorkouts.length > 6 && (
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => setShowAllWorkouts(true)}
+              >
+                <Text style={styles.viewAllText}>View All Workouts</Text>
+              </Pressable>
+            )}
           </View>
         )}
       </ScrollView>
@@ -113,6 +138,14 @@ export default function LogsScreen() {
         visible={showDetailSlideUp}
         workout={selectedWorkout}
         onClose={() => setShowDetailSlideUp(false)}
+      />
+
+      <AllWorkoutsSlideUp
+        visible={showAllWorkouts}
+        workouts={allCompletedWorkouts}
+        onClose={() => setShowAllWorkouts(false)}
+        onViewWorkout={handleViewWorkout}
+        onEditWorkout={handleEditWorkout}
       />
 
       <SettingsMenu
@@ -133,11 +166,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
   },
   content: {
-    paddingBottom: Spacing.xl,
+    paddingBottom: 100,
   },
   section: {
     marginTop: Spacing.lg,
     paddingHorizontal: Spacing.md,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
   },
   sectionLabel: {
     fontSize: Typography.fontSize.caption,
@@ -145,7 +184,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
   },
   workoutCard: {
     flexDirection: 'row',
@@ -185,5 +223,19 @@ const styles = StyleSheet.create({
   },
   editButtonPressed: {
     opacity: 0.6,
+  },
+  viewAllButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.xs,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+  },
+  viewAllText: {
+    fontSize: Typography.fontSize.body,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textSecondary,
   },
 });

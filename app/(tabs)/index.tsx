@@ -9,7 +9,7 @@ import { WorkoutWithExercises } from '@/types/workout';
 import { getCustomTemplates } from '@/lib/database/queries/workouts';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pencil, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { MAX_CUSTOM_WORKOUTS } from '@/lib/utils/validation';
 
 export default function HomeScreen() {
@@ -33,7 +33,7 @@ export default function HomeScreen() {
     });
   };
 
-  const handleEditWorkout = (workout: WorkoutWithExercises) => {
+  const handleViewWorkout = (workout: WorkoutWithExercises) => {
     router.push(`/workout/${workout.id}`);
   };
 
@@ -49,7 +49,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header showSettings={false} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {isWorkoutActive && (
@@ -71,7 +71,7 @@ export default function HomeScreen() {
                   styles.workoutCard,
                   pressed && styles.workoutCardPressed,
                 ]}
-                onPress={() => handleStartFromTemplate(template)}
+                onPress={() => handleViewWorkout(template)}
               >
                 <View style={styles.workoutCardContent}>
                   <Text style={styles.workoutName}>{template.name}</Text>
@@ -93,13 +93,13 @@ export default function HomeScreen() {
                 </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.editButton,
-                    pressed && styles.editButtonPressed,
+                    styles.startButton,
+                    pressed && styles.startButtonPressed,
                   ]}
-                  onPress={() => handleEditWorkout(template)}
+                  onPress={() => handleStartFromTemplate(template)}
                   hitSlop={8}
                 >
-                  <Pencil size={16} color={Colors.textSecondary} />
+                  <Text style={styles.startButtonText}>Start Workout</Text>
                 </Pressable>
               </Pressable>
             ))
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.xl,
+    paddingBottom: 100,
   },
   resumeButton: {
     marginTop: Spacing.lg,
@@ -207,13 +207,19 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginLeft: 4,
   },
-  editButton: {
-    padding: Spacing.sm,
+  startButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderRadius: 8,
     backgroundColor: Colors.bgElevated,
   },
-  editButtonPressed: {
-    opacity: 0.6,
+  startButtonPressed: {
+    opacity: 0.7,
+  },
+  startButtonText: {
+    fontSize: Typography.fontSize.caption,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textSecondary,
   },
   createButton: {
     flexDirection: 'row',

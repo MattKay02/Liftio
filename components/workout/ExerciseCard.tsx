@@ -39,7 +39,6 @@ export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) 
               <Text style={[styles.headerText, styles.prevCol]}>Previous</Text>
               <Text style={[styles.headerText, styles.durationCol]}>Duration</Text>
               <Text style={[styles.headerText, styles.checkCol]}></Text>
-              <Text style={[styles.headerText, styles.removeHeaderCol]}>✕</Text>
             </View>
 
             {exercise.sets.map((set, index) => (
@@ -61,7 +60,6 @@ export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) 
               <Text style={[styles.headerText, styles.repsCol]}>Reps</Text>
               <Text style={[styles.headerText, styles.weightCol]}>Weight</Text>
               <Text style={[styles.headerText, styles.checkCol]}></Text>
-              <Text style={[styles.headerText, styles.removeHeaderCol]}>✕</Text>
             </View>
 
             {exercise.sets.map((set, index) => (
@@ -132,8 +130,7 @@ const styles = StyleSheet.create({
   repsCol: { flex: 1 },
   weightCol: { flex: 1.2 },
   durationCol: { flex: 2 },
-  checkCol: { flex: 0.5 },
-  removeHeaderCol: { flex: 0.4, textAlign: 'center' },
+  checkCol: { flex: 0.6 },
   addSetButton: {
     alignItems: 'center',
     paddingVertical: Spacing.sm,

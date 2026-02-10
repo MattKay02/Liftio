@@ -1,27 +1,70 @@
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, Pressable } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
-import { WorkoutWithExercises } from '@/types/workout';
-import { getWorkoutById, deleteWorkout } from '@/lib/database/queries/workouts';
+import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet } from '@/types/workout';
+import { getWorkoutById, deleteWorkout, updateWorkout } from '@/lib/database/queries/workouts';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
-import { formatDate, formatDuration } from '@/lib/utils/date';
-import { secondsToTimeDisplay } from '@/lib/utils/validation';
+import { formatDate, formatDuration, getTotalWeight, formatWeight } from '@/lib/utils/date';
+import { secondsToTimeDisplay, sanitizeReps, sanitizeWeight, sanitizeTimeInput, formatTimeDisplay, timeDigitsToSeconds, secondsToTimeDigits } from '@/lib/utils/validation';
 import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
+import { generateUUID } from '@/lib/utils/uuid';
+import { consumePendingExercise } from '@/lib/utils/pendingExercise';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { SharedValue } from 'react-native-reanimated';
 
 export default function WorkoutDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
   const [workout, setWorkout] = useState<WorkoutWithExercises | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editWorkout, setEditWorkout] = useState<WorkoutWithExercises | null>(null);
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
 
   useEffect(() => {
     if (id) {
       const data = getWorkoutById(id);
       setWorkout(data);
+      if (edit === 'true' && data) {
+        enterEditMode(data);
+      }
     }
   }, [id]);
+
+  const enterEditMode = (source?: WorkoutWithExercises) => {
+    const w = source ?? workout;
+    if (!w) return;
+    setEditWorkout(JSON.parse(JSON.stringify(w)));
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditWorkout(null);
+    setIsEditing(false);
+  };
+
+  const handleSave = () => {
+    if (!editWorkout) return;
+    Alert.alert('Confirm Changes', 'Save all changes to this workout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Save',
+        onPress: () => {
+          try {
+            updateWorkout(editWorkout);
+            setWorkout(JSON.parse(JSON.stringify(editWorkout)));
+            setEditWorkout(null);
+            setIsEditing(false);
+          } catch (e) {
+            Alert.alert('Error', 'Failed to save changes.');
+          }
+        },
+      },
+    ]);
+  };
 
   const handleDelete = () => {
     Alert.alert('Delete Workout?', 'This action cannot be undone.', [
@@ -39,6 +82,114 @@ export default function WorkoutDetailScreen() {
     ]);
   };
 
+  // Edit mode helpers
+  const updateSetField = (exerciseId: string, setId: string, field: 'reps' | 'weight' | 'duration', value: number) => {
+    if (!editWorkout) return;
+    setEditWorkout({
+      ...editWorkout,
+      exercises: editWorkout.exercises.map((e) =>
+        e.id === exerciseId
+          ? { ...e, sets: e.sets.map((s) => (s.id === setId ? { ...s, [field]: value } : s)) }
+          : e
+      ),
+    });
+  };
+
+  const removeSet = (exerciseId: string, setId: string) => {
+    if (!editWorkout) return;
+    setEditWorkout({
+      ...editWorkout,
+      exercises: editWorkout.exercises.map((e) =>
+        e.id === exerciseId
+          ? {
+              ...e,
+              sets: e.sets
+                .filter((s) => s.id !== setId)
+                .map((s, i) => ({ ...s, setNumber: i + 1 })),
+            }
+          : e
+      ),
+    });
+  };
+
+  // Pick up exercise selected from add-exercise screen
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingExercise();
+      if (pending && editWorkout) {
+        const newExercise: ExerciseWithSets = {
+          id: generateUUID(),
+          workoutId: editWorkout.id,
+          exerciseName: pending.name,
+          orderIndex: editWorkout.exercises.length,
+          notes: null,
+          createdAt: Date.now(),
+          sets: [{
+            id: generateUUID(),
+            exerciseId: '',
+            setNumber: 1,
+            reps: 0,
+            weight: 0,
+            duration: 0,
+            isCompleted: false,
+            createdAt: Date.now(),
+          }],
+        };
+        // Fix the set's exerciseId
+        newExercise.sets[0].exerciseId = newExercise.id;
+        setEditWorkout({
+          ...editWorkout,
+          exercises: [...editWorkout.exercises, newExercise],
+        });
+      }
+    }, [editWorkout])
+  );
+
+  const removeExercise = (exerciseId: string) => {
+    if (!editWorkout) return;
+    const exercise = editWorkout.exercises.find((e) => e.id === exerciseId);
+    Alert.alert(
+      'Remove Exercise',
+      `Remove ${exercise?.exerciseName ?? 'this exercise'} and all its sets?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setEditWorkout({
+              ...editWorkout,
+              exercises: editWorkout.exercises
+                .filter((e) => e.id !== exerciseId)
+                .map((e, i) => ({ ...e, orderIndex: i })),
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  const addSet = (exerciseId: string) => {
+    if (!editWorkout) return;
+    setEditWorkout({
+      ...editWorkout,
+      exercises: editWorkout.exercises.map((e) => {
+        if (e.id !== exerciseId) return e;
+        const newSet: WorkoutSet = {
+          id: generateUUID(),
+          exerciseId,
+          setNumber: e.sets.length + 1,
+          reps: 0,
+          weight: 0,
+          duration: 0,
+          isCompleted: false,
+          createdAt: Date.now(),
+        };
+        return { ...e, sets: [...e.sets, newSet] };
+      }),
+    });
+  };
+
   if (!workout) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -49,39 +200,68 @@ export default function WorkoutDetailScreen() {
     );
   }
 
+  const displayWorkout = isEditing && editWorkout ? editWorkout : workout;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.header}>
-          <Button title="Back" onPress={() => router.back()} variant="text" />
-          <Text style={styles.headerTitle}>{formatDate(workout.date)}</Text>
-          <Button title="Delete" onPress={handleDelete} variant="destructive" />
+          {isEditing ? (
+            <>
+              <Button title="Cancel" onPress={cancelEdit} variant="text" />
+              <Text style={styles.headerTitle}>Editing</Text>
+              <Button title="Save" onPress={handleSave} variant="text" />
+            </>
+          ) : (
+            <>
+              <Button title="Back" onPress={() => router.back()} variant="text" />
+              <Text style={styles.headerTitle}>
+                {workout.isTemplate ? 'Template' : formatDate(workout.date)}
+              </Text>
+              <Button title="Edit" onPress={() => enterEditMode()} variant="text" />
+            </>
+          )}
         </View>
 
         <ScrollView
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.workoutName}>{workout.name}</Text>
+          <Text style={styles.workoutName}>{displayWorkout.name}</Text>
 
           <View style={styles.metaRow}>
-            {workout.duration && (
-              <Text style={styles.metaText}>{formatDuration(workout.duration)}</Text>
+            {!displayWorkout.isTemplate && displayWorkout.duration != null && displayWorkout.duration > 0 && (
+              <Text style={styles.metaText}>{formatDuration(displayWorkout.duration)}</Text>
             )}
             <Text style={styles.metaText}>
-              {workout.exercises.length} exercises
+              {displayWorkout.exercises.length} exercise{displayWorkout.exercises.length !== 1 ? 's' : ''}
             </Text>
+            {!displayWorkout.isTemplate && getTotalWeight(displayWorkout.exercises) > 0 && (
+              <Text style={styles.metaText}>{formatWeight(getTotalWeight(displayWorkout.exercises), weightUnit)}</Text>
+            )}
           </View>
 
-          {workout.notes && (
-            <Text style={styles.notes}>{workout.notes}</Text>
+          {displayWorkout.notes && (
+            <Text style={styles.notes}>{displayWorkout.notes}</Text>
           )}
 
-          {workout.exercises.map((exercise) => {
+          {displayWorkout.exercises.map((exercise) => {
             const isCardio = isCardioExercise(exercise.exerciseName);
             return (
               <View key={exercise.id} style={styles.exerciseSection}>
-                <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                <View style={styles.exerciseHeader}>
+                  <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                  {isEditing && (
+                    <Pressable
+                      onPress={() => removeExercise(exercise.id)}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.removeExerciseText}>Remove</Text>
+                    </Pressable>
+                  )}
+                </View>
                 <View style={styles.setsTable}>
                   <View style={styles.setsHeaderRow}>
                     <Text style={[styles.setsHeaderText, styles.setNumCol]}>Set</Text>
@@ -96,30 +276,160 @@ export default function WorkoutDetailScreen() {
                       </>
                     )}
                   </View>
-                  {exercise.sets.map((set, i) => (
-                    <View key={set.id} style={styles.setRow}>
-                      <Text style={[styles.setText, styles.setNumCol]}>{i + 1}</Text>
-                      {isCardio ? (
-                        <Text style={[styles.setText, styles.durationCol]}>
-                          {secondsToTimeDisplay(set.duration)}
-                        </Text>
-                      ) : (
-                        <>
-                          <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
-                          <Text style={[styles.setText, styles.weightCol]}>{set.weight}</Text>
-                        </>
-                      )}
-                    </View>
-                  ))}
+                  {exercise.sets.map((set, i) =>
+                    isEditing ? (
+                      <EditableSetRow
+                        key={set.id}
+                        set={set}
+                        index={i}
+                        exerciseId={exercise.id}
+                        isCardio={isCardio}
+                        onUpdateField={updateSetField}
+                        onRemove={removeSet}
+                      />
+                    ) : (
+                      <View key={set.id} style={styles.setRow}>
+                        <Text style={[styles.setText, styles.setNumCol]}>{i + 1}</Text>
+                        {isCardio ? (
+                          <Text style={[styles.setText, styles.durationCol]}>
+                            {secondsToTimeDisplay(set.duration)}
+                          </Text>
+                        ) : (
+                          <>
+                            <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
+                            <Text style={[styles.setText, styles.weightCol]}>{set.weight}</Text>
+                          </>
+                        )}
+                      </View>
+                    )
+                  )}
                 </View>
+                {isEditing && (
+                  <Pressable style={styles.addSetButton} onPress={() => addSet(exercise.id)}>
+                    <Text style={styles.addSetText}>+ Add Set</Text>
+                  </Pressable>
+                )}
               </View>
             );
           })}
+
+          {isEditing && (
+            <>
+              <Pressable
+                style={styles.addExerciseButton}
+                onPress={() => router.push('/workout/add-exercise?mode=edit')}
+              >
+                <Text style={styles.addExerciseText}>+ Add Exercise</Text>
+              </Pressable>
+              <Button
+                title="Delete Workout"
+                onPress={handleDelete}
+                variant="destructive"
+                style={styles.deleteButton}
+              />
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
+
+// Editable set row with swipe-to-delete
+interface EditableSetRowProps {
+  set: WorkoutSet;
+  index: number;
+  exerciseId: string;
+  isCardio: boolean;
+  onUpdateField: (exerciseId: string, setId: string, field: 'reps' | 'weight' | 'duration', value: number) => void;
+  onRemove: (exerciseId: string, setId: string) => void;
+}
+
+const EditableSetRow = ({ set, index, exerciseId, isCardio, onUpdateField, onRemove }: EditableSetRowProps) => {
+  const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
+  const [weight, setWeight] = useState(set.weight > 0 ? set.weight.toString() : '');
+  const [timeDigits, setTimeDigits] = useState(secondsToTimeDigits(set.duration));
+
+  const handleRepsChange = (value: string) => {
+    const sanitized = sanitizeReps(value);
+    setReps(sanitized);
+    onUpdateField(exerciseId, set.id, 'reps', parseInt(sanitized) || 0);
+  };
+
+  const handleWeightChange = (value: string) => {
+    const sanitized = sanitizeWeight(value);
+    setWeight(sanitized);
+    onUpdateField(exerciseId, set.id, 'weight', parseFloat(sanitized) || 0);
+  };
+
+  const handleTimeChange = (value: string) => {
+    const sanitized = sanitizeTimeInput(value);
+    setTimeDigits(sanitized);
+    onUpdateField(exerciseId, set.id, 'duration', timeDigitsToSeconds(sanitized));
+  };
+
+  const renderLeftActions = (
+    _progress: SharedValue<number>,
+    _translation: SharedValue<number>,
+    swipeableMethods: SwipeableMethods
+  ) => (
+    <Pressable
+      style={styles.swipeDeleteButton}
+      onPress={() => {
+        swipeableMethods.close();
+        onRemove(exerciseId, set.id);
+      }}
+    >
+      <Text style={styles.swipeDeleteText}>Delete</Text>
+    </Pressable>
+  );
+
+  return (
+    <ReanimatedSwipeable
+      renderLeftActions={renderLeftActions}
+      overshootLeft={false}
+      leftThreshold={40}
+      friction={2}
+      dragOffsetFromLeftEdge={20}
+    >
+      <View style={styles.editSetRow}>
+        <Text style={[styles.setText, styles.setNumCol]}>{index + 1}</Text>
+        {isCardio ? (
+          <TextInput
+            style={[styles.editInput, styles.durationCol]}
+            value={timeDigits ? formatTimeDisplay(timeDigits) : ''}
+            onChangeText={handleTimeChange}
+            keyboardType="numeric"
+            maxLength={9}
+            placeholder="00:00"
+            placeholderTextColor={Colors.textTertiary}
+          />
+        ) : (
+          <>
+            <TextInput
+              style={[styles.editInput, styles.repsCol]}
+              value={reps}
+              onChangeText={handleRepsChange}
+              keyboardType="numeric"
+              maxLength={3}
+              placeholder="0"
+              placeholderTextColor={Colors.textTertiary}
+            />
+            <TextInput
+              style={[styles.editInput, styles.weightCol]}
+              value={weight}
+              onChangeText={handleWeightChange}
+              keyboardType="decimal-pad"
+              maxLength={6}
+              placeholder="0"
+              placeholderTextColor={Colors.textTertiary}
+            />
+          </>
+        )}
+      </View>
+    </ReanimatedSwipeable>
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -181,11 +491,21 @@ const styles = StyleSheet.create({
   exerciseSection: {
     marginBottom: Spacing.lg,
   },
+  exerciseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
   exerciseName: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+  },
+  removeExerciseText: {
+    fontSize: Typography.fontSize.caption,
+    color: Colors.red600,
+    fontWeight: Typography.fontWeight.semibold,
   },
   setsTable: {},
   setsHeaderRow: {
@@ -205,6 +525,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  editSetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.xs + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.bg,
+  },
   setText: {
     fontSize: Typography.fontSize.body,
     color: Colors.textPrimary,
@@ -216,13 +544,65 @@ const styles = StyleSheet.create({
   repsCol: {
     flex: 1,
     textAlign: 'center',
+    marginHorizontal: 4,
   },
   weightCol: {
     flex: 1,
     textAlign: 'center',
+    marginHorizontal: 4,
   },
   durationCol: {
     flex: 2,
     textAlign: 'center',
+    marginHorizontal: 4,
+  },
+  editInput: {
+    backgroundColor: Colors.bgElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    fontSize: Typography.fontSize.body,
+    textAlign: 'center',
+    color: Colors.textPrimary,
+  },
+  addSetButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  addSetText: {
+    fontSize: Typography.fontSize.body,
+    color: Colors.textSecondary,
+  },
+  addExerciseButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    marginBottom: Spacing.md,
+  },
+  addExerciseText: {
+    fontSize: Typography.fontSize.body,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  deleteButton: {
+    marginTop: Spacing.md,
+  },
+  swipeDeleteButton: {
+    backgroundColor: Colors.red600,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+  },
+  swipeDeleteText: {
+    color: '#FFFFFF',
+    fontSize: Typography.fontSize.caption,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });

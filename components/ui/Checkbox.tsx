@@ -31,11 +31,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checked: {
-    backgroundColor: Colors.highlight,
-    borderColor: Colors.highlight,
+    backgroundColor: 'rgba(22, 163, 74, 0.15)',
+    borderColor: Colors.green600,
   },
   checkmark: {
-    color: Colors.textPrimary,
+    color: Colors.green600,
     fontSize: 14,
     fontWeight: '700',
   },

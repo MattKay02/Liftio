@@ -5,13 +5,15 @@ import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
-import { formatDuration } from '@/lib/utils/date';
+import { formatDuration, getTotalWeight, formatWeight } from '@/lib/utils/date';
+import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_NOTES_LENGTH } from '@/lib/utils/validation';
 
 export default function FinishWorkoutScreen() {
   const [notes, setNotes] = useState('');
   const { activeWorkout, workoutStartTime, finishWorkout } = useWorkoutStore();
+  const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
 
   if (!activeWorkout || !workoutStartTime) {
     return null;
@@ -53,6 +55,14 @@ export default function FinishWorkoutScreen() {
               <Text style={styles.summaryValue}>{totalSets}</Text>
               <Text style={styles.summaryLabel}>Sets</Text>
             </View>
+            {getTotalWeight(activeWorkout.exercises) > 0 && (
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>
+                  {formatWeight(getTotalWeight(activeWorkout.exercises), weightUnit)}
+                </Text>
+                <Text style={styles.summaryLabel}>Volume</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.notesLabelRow}>

@@ -181,6 +181,59 @@ export const getWorkoutById = (id: string): WorkoutWithExercises | null => {
   return mapWorkoutWithExercises(row);
 };
 
+export const updateWorkout = (workout: WorkoutWithExercises) => {
+  const db = getDb();
+
+  // Delete existing exercises and sets for this workout
+  const exerciseRows = db.getAllSync<{ id: string }>(
+    'SELECT id FROM exercises WHERE workout_id = ?',
+    [workout.id]
+  );
+  for (const er of exerciseRows) {
+    db.runSync('DELETE FROM sets WHERE exercise_id = ?', [er.id]);
+  }
+  db.runSync('DELETE FROM exercises WHERE workout_id = ?', [workout.id]);
+
+  // Update workout row
+  db.runSync(
+    'UPDATE workouts SET name = ?, notes = ?, updated_at = ? WHERE id = ?',
+    [workout.name, workout.notes, Date.now(), workout.id]
+  );
+
+  // Re-insert exercises and sets
+  for (const exercise of workout.exercises) {
+    db.runSync(
+      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        exercise.id,
+        workout.id,
+        exercise.exerciseName,
+        exercise.orderIndex,
+        exercise.notes,
+        exercise.createdAt,
+      ]
+    );
+
+    for (const set of exercise.sets) {
+      db.runSync(
+        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, is_completed, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          set.id,
+          exercise.id,
+          set.setNumber,
+          set.reps,
+          set.weight,
+          set.duration ?? 0,
+          set.isCompleted ? 1 : 0,
+          set.createdAt,
+        ]
+      );
+    }
+  }
+};
+
 export const deleteWorkout = (id: string) => {
   const db = getDb();
   db.runSync('DELETE FROM workouts WHERE id = ?', [id]);

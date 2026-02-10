@@ -272,7 +272,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   },
 
   completeSet: (exerciseId, setId) => {
-    get().updateSet(exerciseId, setId, { isCompleted: true });
+    const { activeWorkout } = get();
+    if (!activeWorkout) return;
+    const exercise = activeWorkout.exercises.find((e) => e.id === exerciseId);
+    const currentSet = exercise?.sets.find((s) => s.id === setId);
+    get().updateSet(exerciseId, setId, { isCompleted: !currentSet?.isCompleted });
   },
 
   getPreviousSetData: (exerciseName) => {
