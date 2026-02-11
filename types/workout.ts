@@ -1,3 +1,13 @@
+export type CardioMode = 'time' | 'time_distance' | 'time_reps' | 'distance' | 'reps';
+
+export const CARDIO_MODE_LABELS: Record<CardioMode, string> = {
+  time: 'Time',
+  time_distance: 'Time + Dist',
+  time_reps: 'Time + Reps',
+  distance: 'Distance',
+  reps: 'Reps',
+};
+
 export interface Workout {
   id: string;
   name: string;
@@ -15,6 +25,7 @@ export interface Exercise {
   exerciseName: string;
   orderIndex: number;
   notes: string | null;
+  cardioMode: CardioMode | null;
   createdAt: number;
 }
 
@@ -25,6 +36,7 @@ export interface WorkoutSet {
   reps: number;
   weight: number;
   duration: number; // total seconds, used for cardio
+  distance: number;
   isCompleted: boolean;
   createdAt: number;
 }
@@ -42,6 +54,7 @@ export interface ExerciseLibraryItem {
 export interface UserSettings {
   id: number;
   weightUnit: 'lbs' | 'kg';
+  distanceUnit: 'km' | 'mi';
   defaultRestTimer: number;
   theme: 'light' | 'dark';
   createdAt: number;

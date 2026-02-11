@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet } from '@/types/workout';
+import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet, CardioMode } from '@/types/workout';
 import { generateUUID } from '@/lib/utils/uuid';
 import { saveWorkout, getPreviousSetsForExercise } from '@/lib/database/queries/workouts';
 import {
@@ -9,6 +9,7 @@ import {
   MAX_DURATION_SECONDS,
   clampReps,
   clampWeight,
+  clampDistance,
 } from '@/lib/utils/validation';
 import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
 
@@ -28,6 +29,8 @@ interface WorkoutState {
   updateSet: (exerciseId: string, setId: string, data: Partial<WorkoutSet>) => void;
   removeSet: (exerciseId: string, setId: string) => void;
   completeSet: (exerciseId: string, setId: string) => void;
+
+  updateCardioMode: (exerciseId: string, mode: CardioMode) => void;
 
   getPreviousSetData: (exerciseName: string) => WorkoutSet[];
 }
@@ -49,6 +52,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         exerciseName: e.exerciseName,
         orderIndex: i,
         notes: null,
+        cardioMode: e.cardioMode,
         createdAt: now,
         sets: e.sets.map((s, j) => ({
           id: generateUUID(),
@@ -57,6 +61,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           reps: 0,
           weight: s.weight,
           duration: 0,
+          distance: 0,
           isCompleted: false,
           createdAt: now,
         })),
@@ -113,7 +118,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const filteredExercises = activeWorkout.exercises
       .map((e) => ({
         ...e,
-        sets: e.sets.filter((s) => s.reps > 0 || s.duration > 0),
+        sets: e.sets.filter((s) => s.reps > 0 || s.duration > 0 || s.distance > 0),
       }))
       .filter((e) => e.sets.length > 0);
 
@@ -152,12 +157,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (activeWorkout.exercises.length >= MAX_EXERCISES_PER_WORKOUT) return;
 
     const exerciseId = generateUUID();
+    const isCardio = isCardioExercise(exerciseName);
     const newExercise: ExerciseWithSets = {
       id: exerciseId,
       workoutId: activeWorkout.id,
       exerciseName,
       orderIndex: activeWorkout.exercises.length,
       notes: null,
+      cardioMode: isCardio ? 'time' : null,
       createdAt: Date.now(),
       sets: [
         {
@@ -167,6 +174,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           reps: 0,
           weight: 0,
           duration: 0,
+          distance: 0,
           isCompleted: false,
           createdAt: Date.now(),
         },
@@ -211,6 +219,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       reps: 0,
       weight: isCardio ? 0 : (lastSet?.weight || 0),
       duration: 0,
+      distance: 0,
       isCompleted: false,
       createdAt: Date.now(),
     };
@@ -234,6 +243,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (clamped.reps !== undefined) clamped.reps = clampReps(clamped.reps);
     if (clamped.weight !== undefined) clamped.weight = clampWeight(clamped.weight);
     if (clamped.duration !== undefined) clamped.duration = Math.min(Math.max(Math.round(clamped.duration), 0), MAX_DURATION_SECONDS);
+    if (clamped.distance !== undefined) clamped.distance = clampDistance(clamped.distance);
 
     set({
       activeWorkout: {
@@ -277,6 +287,20 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const exercise = activeWorkout.exercises.find((e) => e.id === exerciseId);
     const currentSet = exercise?.sets.find((s) => s.id === setId);
     get().updateSet(exerciseId, setId, { isCompleted: !currentSet?.isCompleted });
+  },
+
+  updateCardioMode: (exerciseId, mode) => {
+    const { activeWorkout } = get();
+    if (!activeWorkout) return;
+
+    set({
+      activeWorkout: {
+        ...activeWorkout,
+        exercises: activeWorkout.exercises.map((e) =>
+          e.id === exerciseId ? { ...e, cardioMode: mode } : e
+        ),
+      },
+    });
   },
 
   getPreviousSetData: (exerciseName) => {

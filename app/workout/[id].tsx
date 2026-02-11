@@ -5,11 +5,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
-import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet } from '@/types/workout';
+import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet, CardioMode, CARDIO_MODE_LABELS } from '@/types/workout';
+import { CardioModePicker } from '@/components/workout/CardioModePicker';
 import { getWorkoutById, deleteWorkout, updateWorkout } from '@/lib/database/queries/workouts';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { formatDate, formatDuration, getTotalWeight, formatWeight } from '@/lib/utils/date';
-import { secondsToTimeDisplay, sanitizeReps, sanitizeWeight, sanitizeTimeInput, formatTimeDisplay, timeDigitsToSeconds, secondsToTimeDigits } from '@/lib/utils/validation';
+import { secondsToTimeDisplay, sanitizeReps, sanitizeWeight, sanitizeDistance, sanitizeTimeInput, formatTimeDisplay, timeDigitsToSeconds, secondsToTimeDigits } from '@/lib/utils/validation';
 import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
 import { generateUUID } from '@/lib/utils/uuid';
 import { consumePendingExercise } from '@/lib/utils/pendingExercise';
@@ -23,6 +24,8 @@ export default function WorkoutDetailScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editWorkout, setEditWorkout] = useState<WorkoutWithExercises | null>(null);
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
+  const distanceUnit = useSettingsStore((s) => s.settings.distanceUnit);
+  const [modePickerExerciseId, setModePickerExerciseId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -83,7 +86,7 @@ export default function WorkoutDetailScreen() {
   };
 
   // Edit mode helpers
-  const updateSetField = (exerciseId: string, setId: string, field: 'reps' | 'weight' | 'duration', value: number) => {
+  const updateSetField = (exerciseId: string, setId: string, field: 'reps' | 'weight' | 'duration' | 'distance', value: number) => {
     if (!editWorkout) return;
     setEditWorkout({
       ...editWorkout,
@@ -91,6 +94,16 @@ export default function WorkoutDetailScreen() {
         e.id === exerciseId
           ? { ...e, sets: e.sets.map((s) => (s.id === setId ? { ...s, [field]: value } : s)) }
           : e
+      ),
+    });
+  };
+
+  const updateExerciseCardioMode = (exerciseId: string, mode: CardioMode) => {
+    if (!editWorkout) return;
+    setEditWorkout({
+      ...editWorkout,
+      exercises: editWorkout.exercises.map((e) =>
+        e.id === exerciseId ? { ...e, cardioMode: mode } : e
       ),
     });
   };
@@ -117,12 +130,14 @@ export default function WorkoutDetailScreen() {
     useCallback(() => {
       const pending = consumePendingExercise();
       if (pending && editWorkout) {
+        const isCardio = isCardioExercise(pending.name);
         const newExercise: ExerciseWithSets = {
           id: generateUUID(),
           workoutId: editWorkout.id,
           exerciseName: pending.name,
           orderIndex: editWorkout.exercises.length,
           notes: null,
+          cardioMode: isCardio ? 'time' : null,
           createdAt: Date.now(),
           sets: [{
             id: generateUUID(),
@@ -131,6 +146,7 @@ export default function WorkoutDetailScreen() {
             reps: 0,
             weight: 0,
             duration: 0,
+            distance: 0,
             isCompleted: false,
             createdAt: Date.now(),
           }],
@@ -182,6 +198,7 @@ export default function WorkoutDetailScreen() {
           reps: 0,
           weight: 0,
           duration: 0,
+          distance: 0,
           isCompleted: false,
           createdAt: Date.now(),
         };
@@ -248,7 +265,17 @@ export default function WorkoutDetailScreen() {
           )}
 
           {displayWorkout.exercises.map((exercise) => {
-            const isCardio = isCardioExercise(exercise.exerciseName);
+            const isCardio = exercise.cardioMode !== null || isCardioExercise(exercise.exerciseName);
+            const cardioMode: CardioMode = exercise.cardioMode ?? 'time';
+
+            const showTime = cardioMode === 'time' || cardioMode === 'time_distance' || cardioMode === 'time_reps';
+            const showDistance = cardioMode === 'distance' || cardioMode === 'time_distance';
+            const showReps = cardioMode === 'reps' || cardioMode === 'time_reps';
+
+            // Dynamic header columns for cardio
+            const fieldCount = [showTime, showDistance, showReps].filter(Boolean).length;
+            const fieldFlex = fieldCount === 1 ? 2 : 1.2;
+
             return (
               <View key={exercise.id} style={styles.exerciseSection}>
                 <View style={styles.exerciseHeader}>
@@ -262,17 +289,42 @@ export default function WorkoutDetailScreen() {
                     </Pressable>
                   )}
                 </View>
+
+                {/* Edit Units button in edit mode for cardio exercises */}
+                {isEditing && isCardio && (
+                  <Pressable style={styles.editUnitsButton} onPress={() => setModePickerExerciseId(exercise.id)}>
+                    <Text style={styles.editUnitsText}>
+                      {CARDIO_MODE_LABELS[cardioMode]}
+                    </Text>
+                    <Text style={styles.editUnitsChevron}>Edit Units</Text>
+                  </Pressable>
+                )}
+
+                {/* Mode picker bottom sheet */}
+                {isEditing && isCardio && (
+                  <CardioModePicker
+                    visible={modePickerExerciseId === exercise.id}
+                    currentMode={cardioMode}
+                    onSelect={(mode) => updateExerciseCardioMode(exercise.id, mode)}
+                    onClose={() => setModePickerExerciseId(null)}
+                  />
+                )}
+
                 <View style={styles.setsTable}>
                   <View style={styles.setsHeaderRow}>
                     <Text style={[styles.setsHeaderText, styles.setNumCol]}>Set</Text>
                     {isCardio ? (
-                      <Text style={[styles.setsHeaderText, styles.durationCol]}>Duration</Text>
+                      <>
+                        {showTime && <Text style={[styles.setsHeaderText, { flex: fieldFlex, textAlign: 'center' }]}>Duration</Text>}
+                        {showDistance && <Text style={[styles.setsHeaderText, { flex: fieldFlex, textAlign: 'center' }]}>Dist ({distanceUnit})</Text>}
+                        {showReps && <Text style={[styles.setsHeaderText, { flex: fieldFlex, textAlign: 'center' }]}>Reps</Text>}
+                      </>
                     ) : (
                       <>
-                        <Text style={[styles.setsHeaderText, styles.repsCol]}>Reps</Text>
                         <Text style={[styles.setsHeaderText, styles.weightCol]}>
                           Weight ({weightUnit})
                         </Text>
+                        <Text style={[styles.setsHeaderText, styles.repsCol]}>Reps</Text>
                       </>
                     )}
                   </View>
@@ -284,6 +336,8 @@ export default function WorkoutDetailScreen() {
                         index={i}
                         exerciseId={exercise.id}
                         isCardio={isCardio}
+                        cardioMode={cardioMode}
+                        distanceUnit={distanceUnit}
                         onUpdateField={updateSetField}
                         onRemove={removeSet}
                       />
@@ -291,13 +345,27 @@ export default function WorkoutDetailScreen() {
                       <View key={set.id} style={styles.setRow}>
                         <Text style={[styles.setText, styles.setNumCol]}>{i + 1}</Text>
                         {isCardio ? (
-                          <Text style={[styles.setText, styles.durationCol]}>
-                            {secondsToTimeDisplay(set.duration)}
-                          </Text>
+                          <>
+                            {showTime && (
+                              <Text style={[styles.setText, { flex: fieldFlex, textAlign: 'center' }]}>
+                                {secondsToTimeDisplay(set.duration)}
+                              </Text>
+                            )}
+                            {showDistance && (
+                              <Text style={[styles.setText, { flex: fieldFlex, textAlign: 'center' }]}>
+                                {set.distance > 0 ? set.distance : '-'}
+                              </Text>
+                            )}
+                            {showReps && (
+                              <Text style={[styles.setText, { flex: fieldFlex, textAlign: 'center' }]}>
+                                {set.reps > 0 ? set.reps : '-'}
+                              </Text>
+                            )}
+                          </>
                         ) : (
                           <>
-                            <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
                             <Text style={[styles.setText, styles.weightCol]}>{set.weight}</Text>
+                            <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
                           </>
                         )}
                       </View>
@@ -341,14 +409,24 @@ interface EditableSetRowProps {
   index: number;
   exerciseId: string;
   isCardio: boolean;
-  onUpdateField: (exerciseId: string, setId: string, field: 'reps' | 'weight' | 'duration', value: number) => void;
+  cardioMode: CardioMode;
+  distanceUnit: 'km' | 'mi';
+  onUpdateField: (exerciseId: string, setId: string, field: 'reps' | 'weight' | 'duration' | 'distance', value: number) => void;
   onRemove: (exerciseId: string, setId: string) => void;
 }
 
-const EditableSetRow = ({ set, index, exerciseId, isCardio, onUpdateField, onRemove }: EditableSetRowProps) => {
+const EditableSetRow = ({ set, index, exerciseId, isCardio, cardioMode, distanceUnit, onUpdateField, onRemove }: EditableSetRowProps) => {
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [weight, setWeight] = useState(set.weight > 0 ? set.weight.toString() : '');
   const [timeDigits, setTimeDigits] = useState(secondsToTimeDigits(set.duration));
+  const [distanceValue, setDistanceValue] = useState(set.distance > 0 ? set.distance.toString() : '');
+
+  const showTime = cardioMode === 'time' || cardioMode === 'time_distance' || cardioMode === 'time_reps';
+  const showDistanceField = cardioMode === 'distance' || cardioMode === 'time_distance';
+  const showRepsField = cardioMode === 'reps' || cardioMode === 'time_reps';
+
+  const fieldCount = [showTime, showDistanceField, showRepsField].filter(Boolean).length;
+  const fieldFlex = fieldCount === 1 ? 2 : 1.2;
 
   const handleRepsChange = (value: string) => {
     const sanitized = sanitizeReps(value);
@@ -366,6 +444,12 @@ const EditableSetRow = ({ set, index, exerciseId, isCardio, onUpdateField, onRem
     const sanitized = sanitizeTimeInput(value);
     setTimeDigits(sanitized);
     onUpdateField(exerciseId, set.id, 'duration', timeDigitsToSeconds(sanitized));
+  };
+
+  const handleDistanceChange = (value: string) => {
+    const sanitized = sanitizeDistance(value);
+    setDistanceValue(sanitized);
+    onUpdateField(exerciseId, set.id, 'distance', parseFloat(sanitized) || 0);
   };
 
   const renderLeftActions = (
@@ -395,32 +479,58 @@ const EditableSetRow = ({ set, index, exerciseId, isCardio, onUpdateField, onRem
       <View style={styles.editSetRow}>
         <Text style={[styles.setText, styles.setNumCol]}>{index + 1}</Text>
         {isCardio ? (
-          <TextInput
-            style={[styles.editInput, styles.durationCol]}
-            value={timeDigits ? formatTimeDisplay(timeDigits) : ''}
-            onChangeText={handleTimeChange}
-            keyboardType="numeric"
-            maxLength={9}
-            placeholder="00:00"
-            placeholderTextColor={Colors.textTertiary}
-          />
+          <>
+            {showTime && (
+              <TextInput
+                style={[styles.editInput, { flex: fieldFlex, marginHorizontal: 4 }]}
+                value={timeDigits ? formatTimeDisplay(timeDigits) : ''}
+                onChangeText={handleTimeChange}
+                keyboardType="numeric"
+                maxLength={9}
+                placeholder="00:00"
+                placeholderTextColor={Colors.textTertiary}
+              />
+            )}
+            {showDistanceField && (
+              <TextInput
+                style={[styles.editInput, { flex: fieldFlex, marginHorizontal: 4 }]}
+                value={distanceValue}
+                onChangeText={handleDistanceChange}
+                keyboardType="decimal-pad"
+                maxLength={6}
+                placeholder={`0 ${distanceUnit}`}
+                placeholderTextColor={Colors.textTertiary}
+              />
+            )}
+            {showRepsField && (
+              <TextInput
+                style={[styles.editInput, { flex: fieldFlex, marginHorizontal: 4 }]}
+                value={reps}
+                onChangeText={handleRepsChange}
+                keyboardType="numeric"
+                maxLength={3}
+                placeholder="0"
+                placeholderTextColor={Colors.textTertiary}
+              />
+            )}
+          </>
         ) : (
           <>
-            <TextInput
-              style={[styles.editInput, styles.repsCol]}
-              value={reps}
-              onChangeText={handleRepsChange}
-              keyboardType="numeric"
-              maxLength={3}
-              placeholder="0"
-              placeholderTextColor={Colors.textTertiary}
-            />
             <TextInput
               style={[styles.editInput, styles.weightCol]}
               value={weight}
               onChangeText={handleWeightChange}
               keyboardType="decimal-pad"
               maxLength={6}
+              placeholder="0"
+              placeholderTextColor={Colors.textTertiary}
+            />
+            <TextInput
+              style={[styles.editInput, styles.repsCol]}
+              value={reps}
+              onChangeText={handleRepsChange}
+              keyboardType="numeric"
+              maxLength={3}
               placeholder="0"
               placeholderTextColor={Colors.textTertiary}
             />
@@ -506,6 +616,27 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.caption,
     color: Colors.red600,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  editUnitsButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.bgElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: Spacing.xs + 2,
+    marginBottom: Spacing.sm,
+  },
+  editUnitsText: {
+    fontSize: Typography.fontSize.caption,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  editUnitsChevron: {
+    fontSize: Typography.fontSize.caption,
+    color: Colors.textTertiary,
   },
   setsTable: {},
   setsHeaderRow: {

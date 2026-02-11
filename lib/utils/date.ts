@@ -1,12 +1,10 @@
 export const getTimeSinceString = (timestamp: number): string => {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  const days = Math.floor(seconds / 86400);
-
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days} days ago`;
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  return `${Math.floor(days / 30)} months ago`;
+  const date = new Date(timestamp);
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = days[date.getDay()];
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dayName} ${dd}/${mm}`;
 };
 
 export const formatDuration = (seconds: number): string => {
@@ -30,11 +28,9 @@ export const formatDate = (timestamp: number): string => {
 
 export const formatTimeOfDay = (timestamp: number): string => {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
 };
 
 export const getTotalWeight = (exercises: { sets: { reps: number; weight: number }[] }[]): number => {

@@ -1,6 +1,6 @@
 import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
 import { useState, useEffect } from 'react';
-import { WorkoutSet } from '@/types/workout';
+import { WorkoutSet, CardioMode } from '@/types/workout';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Colors, Spacing, Typography } from '@/constants';
@@ -10,6 +10,8 @@ import {
   timeDigitsToSeconds,
   secondsToTimeDigits,
   secondsToTimeDisplay,
+  sanitizeDistance,
+  sanitizeReps,
 } from '@/lib/utils/validation';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SharedValue } from 'react-native-reanimated';
@@ -19,19 +21,31 @@ interface CardioSetRowProps {
   setNumber: number;
   exerciseId: string;
   exerciseName: string;
+  cardioMode: CardioMode;
+  distanceUnit: 'km' | 'mi';
   readonly?: boolean;
 }
 
-export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = false }: CardioSetRowProps) => {
+export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, cardioMode, distanceUnit, readonly = false }: CardioSetRowProps) => {
   const { updateSet, completeSet, removeSet, getPreviousSetData } = useWorkoutStore();
   const [previousData, setPreviousData] = useState('');
   const [timeDigits, setTimeDigits] = useState(secondsToTimeDigits(set.duration));
+  const [distanceValue, setDistanceValue] = useState(set.distance > 0 ? set.distance.toString() : '');
+  const [repsValue, setRepsValue] = useState(set.reps > 0 ? set.reps.toString() : '');
+
+  const showTime = cardioMode === 'time' || cardioMode === 'time_distance' || cardioMode === 'time_reps';
+  const showDistance = cardioMode === 'distance' || cardioMode === 'time_distance';
+  const showReps = cardioMode === 'reps' || cardioMode === 'time_reps';
 
   useEffect(() => {
     const prevSets = getPreviousSetData(exerciseName);
     if (prevSets && prevSets[setNumber - 1]) {
       const prev = prevSets[setNumber - 1];
-      setPreviousData(secondsToTimeDisplay(prev.duration));
+      const parts: string[] = [];
+      if (showTime && prev.duration > 0) parts.push(secondsToTimeDisplay(prev.duration));
+      if (showDistance && prev.distance > 0) parts.push(`${prev.distance}${distanceUnit}`);
+      if (showReps && prev.reps > 0) parts.push(`${prev.reps}`);
+      setPreviousData(parts.join(' / ') || '-');
     }
   }, []);
 
@@ -43,16 +57,39 @@ export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, readonl
     updateSet(exerciseId, set.id, { duration: seconds });
   };
 
+  const handleDistanceChange = (value: string) => {
+    if (readonly) return;
+    const sanitized = sanitizeDistance(value);
+    setDistanceValue(sanitized);
+    updateSet(exerciseId, set.id, { distance: parseFloat(sanitized) || 0 });
+  };
+
+  const handleRepsChange = (value: string) => {
+    if (readonly) return;
+    const sanitized = sanitizeReps(value);
+    setRepsValue(sanitized);
+    updateSet(exerciseId, set.id, { reps: parseInt(sanitized) || 0 });
+  };
+
   const handleComplete = () => {
     if (readonly) return;
     if (set.isCompleted) {
       completeSet(exerciseId, set.id);
       return;
     }
-    if (timeDigitsToSeconds(timeDigits) > 0) {
+    // Allow completion if any tracked field has data
+    const hasData =
+      (showTime && timeDigitsToSeconds(timeDigits) > 0) ||
+      (showDistance && (parseFloat(distanceValue) || 0) > 0) ||
+      (showReps && (parseInt(repsValue) || 0) > 0);
+    if (hasData) {
       completeSet(exerciseId, set.id);
     }
   };
+
+  // Count visible fields to determine flex proportions
+  const fieldCount = [showTime, showDistance, showReps].filter(Boolean).length;
+  const fieldFlex = fieldCount === 1 ? 2 : 1.2;
 
   const renderLeftActions = (
     _progress: SharedValue<number>,
@@ -76,16 +113,42 @@ export const CardioSetRow = ({ set, setNumber, exerciseId, exerciseName, readonl
       <Text style={[styles.text, styles.prevCol, styles.prevText]}>
         {previousData || '-'}
       </Text>
-      <TextInput
-        style={[styles.input, styles.durationCol]}
-        value={timeDigits ? formatTimeDisplay(timeDigits) : ''}
-        onChangeText={handleTimeChange}
-        keyboardType="numeric"
-        maxLength={9}
-        placeholder="00:00"
-        placeholderTextColor={Colors.textTertiary}
-        editable={!set.isCompleted && !readonly}
-      />
+      {showTime && (
+        <TextInput
+          style={[styles.input, { flex: fieldFlex, marginHorizontal: 4 }]}
+          value={timeDigits ? formatTimeDisplay(timeDigits) : ''}
+          onChangeText={handleTimeChange}
+          keyboardType="numeric"
+          maxLength={9}
+          placeholder="00:00"
+          placeholderTextColor={Colors.textTertiary}
+          editable={!set.isCompleted && !readonly}
+        />
+      )}
+      {showDistance && (
+        <TextInput
+          style={[styles.input, { flex: fieldFlex, marginHorizontal: 4 }]}
+          value={distanceValue}
+          onChangeText={handleDistanceChange}
+          keyboardType="decimal-pad"
+          maxLength={6}
+          placeholder={`0 ${distanceUnit}`}
+          placeholderTextColor={Colors.textTertiary}
+          editable={!set.isCompleted && !readonly}
+        />
+      )}
+      {showReps && (
+        <TextInput
+          style={[styles.input, { flex: fieldFlex, marginHorizontal: 4 }]}
+          value={repsValue}
+          onChangeText={handleRepsChange}
+          keyboardType="numeric"
+          maxLength={3}
+          placeholder="0"
+          placeholderTextColor={Colors.textTertiary}
+          editable={!set.isCompleted && !readonly}
+        />
+      )}
       <View style={styles.checkCol}>
         <Checkbox
           checked={set.isCompleted}
@@ -147,7 +210,6 @@ const styles = StyleSheet.create({
   },
   setCol: { flex: 0.5 },
   prevCol: { flex: 1.5 },
-  durationCol: { flex: 2, marginHorizontal: 4 },
   checkCol: { flex: 0.6, alignItems: 'center' },
   deleteButton: {
     backgroundColor: Colors.red600,

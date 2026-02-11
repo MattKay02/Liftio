@@ -1,6 +1,7 @@
 import { getDb } from '../db';
-import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet } from '@/types/workout';
+import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet, CardioMode } from '@/types/workout';
 import { generateUUID } from '@/lib/utils/uuid';
+import { isCardioExercise } from './exerciseLibrary';
 
 interface WorkoutRow {
   id: string;
@@ -19,6 +20,7 @@ interface ExerciseRow {
   exercise_name: string;
   order_index: number;
   notes: string | null;
+  cardio_mode: string | null;
   created_at: number;
 }
 
@@ -29,6 +31,7 @@ interface SetRow {
   reps: number;
   weight: number;
   duration: number;
+  distance: number;
   is_completed: number;
   created_at: number;
 }
@@ -53,22 +56,23 @@ export const saveWorkout = (workout: WorkoutWithExercises) => {
 
   for (const exercise of workout.exercises) {
     db.runSync(
-      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, cardio_mode, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         exercise.id,
         workout.id,
         exercise.exerciseName,
         exercise.orderIndex,
         exercise.notes,
+        exercise.cardioMode,
         exercise.createdAt,
       ]
     );
 
     for (const set of exercise.sets) {
       db.runSync(
-        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, is_completed, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, distance, is_completed, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           set.id,
           exercise.id,
@@ -76,6 +80,7 @@ export const saveWorkout = (workout: WorkoutWithExercises) => {
           set.reps,
           set.weight,
           set.duration ?? 0,
+          set.distance ?? 0,
           set.isCompleted ? 1 : 0,
           set.createdAt,
         ]
@@ -151,18 +156,19 @@ export const saveTemplate = (name: string, exerciseNames: string[]) => {
 
   for (let i = 0; i < exerciseNames.length; i++) {
     const exerciseId = generateUUID();
+    const cardioMode = isCardioExercise(exerciseNames[i]) ? 'time' : null;
 
     db.runSync(
-      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [exerciseId, workoutId, exerciseNames[i], i, null, now]
+      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, cardio_mode, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [exerciseId, workoutId, exerciseNames[i], i, null, cardioMode, now]
     );
 
     // Create 3 empty sets per exercise as a framework
     for (let j = 1; j <= 3; j++) {
       db.runSync(
-        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, is_completed, created_at)
-         VALUES (?, ?, ?, 0, 0, 0, ?)`,
+        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, distance, is_completed, created_at)
+         VALUES (?, ?, ?, 0, 0, 0, 0, 0, ?)`,
         [generateUUID(), exerciseId, j, now]
       );
     }
@@ -203,22 +209,23 @@ export const updateWorkout = (workout: WorkoutWithExercises) => {
   // Re-insert exercises and sets
   for (const exercise of workout.exercises) {
     db.runSync(
-      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO exercises (id, workout_id, exercise_name, order_index, notes, cardio_mode, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         exercise.id,
         workout.id,
         exercise.exerciseName,
         exercise.orderIndex,
         exercise.notes,
+        exercise.cardioMode,
         exercise.createdAt,
       ]
     );
 
     for (const set of exercise.sets) {
       db.runSync(
-        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, is_completed, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO sets (id, exercise_id, set_number, reps, weight, duration, distance, is_completed, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           set.id,
           exercise.id,
@@ -226,6 +233,7 @@ export const updateWorkout = (workout: WorkoutWithExercises) => {
           set.reps,
           set.weight,
           set.duration ?? 0,
+          set.distance ?? 0,
           set.isCompleted ? 1 : 0,
           set.createdAt,
         ]
@@ -237,6 +245,18 @@ export const updateWorkout = (workout: WorkoutWithExercises) => {
 export const deleteWorkout = (id: string) => {
   const db = getDb();
   db.runSync('DELETE FROM workouts WHERE id = ?', [id]);
+};
+
+export const reorderTemplates = (orderedIds: string[]) => {
+  const db = getDb();
+  // Templates are fetched ORDER BY created_at DESC, so first item gets highest timestamp
+  const base = Date.now();
+  for (let i = 0; i < orderedIds.length; i++) {
+    db.runSync(
+      'UPDATE workouts SET created_at = ? WHERE id = ?',
+      [base - i, orderedIds[i]]
+    );
+  }
 };
 
 export const getPreviousSetsForExercise = (exerciseName: string): WorkoutSet[] => {
@@ -282,6 +302,7 @@ const mapWorkoutWithExercises = (row: WorkoutRow): WorkoutWithExercises => {
       exerciseName: er.exercise_name,
       orderIndex: er.order_index,
       notes: er.notes,
+      cardioMode: (er.cardio_mode as CardioMode) ?? null,
       createdAt: er.created_at,
       sets: setRows.map(mapSet),
     };
@@ -307,6 +328,7 @@ const mapSet = (row: SetRow): WorkoutSet => ({
   reps: row.reps,
   weight: row.weight,
   duration: row.duration ?? 0,
+  distance: row.distance ?? 0,
   isCompleted: row.is_completed === 1,
   createdAt: row.created_at,
 });

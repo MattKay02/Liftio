@@ -10,6 +10,8 @@ export const MAX_EXERCISE_NAME_LENGTH = 50;
 export const MAX_WEIGHT = 900;
 export const MAX_WEIGHT_DECIMALS = 2;
 export const MAX_REPS = 250;
+export const MAX_DISTANCE = 999.99;
+export const MAX_DISTANCE_DECIMALS = 2;
 
 // ── Reps ────────────────────────────────────────────
 /** Sanitize reps input: integers only, clamped to 0–250 */
@@ -26,6 +28,35 @@ export const sanitizeReps = (value: string): string => {
 /** Clamp a numeric reps value */
 export const clampReps = (value: number): number => {
   return Math.min(Math.max(Math.round(value), 0), MAX_REPS);
+};
+
+// ── Distance ───────────────────────────────────────
+/** Sanitize distance input: decimal allowed, max 2 decimals, clamped to 0–999.99 */
+export const sanitizeDistance = (value: string): string => {
+  let cleaned = value.replace(/[^0-9.]/g, '');
+
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    cleaned = parts[0] + '.' + parts.slice(1).join('');
+  }
+
+  if (parts.length === 2 && parts[1].length > MAX_DISTANCE_DECIMALS) {
+    cleaned = parts[0] + '.' + parts[1].slice(0, MAX_DISTANCE_DECIMALS);
+  }
+
+  if (cleaned === '' || cleaned === '.') return cleaned;
+
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return '';
+  if (num > MAX_DISTANCE) return MAX_DISTANCE.toString();
+
+  return cleaned;
+};
+
+/** Clamp a numeric distance value */
+export const clampDistance = (value: number): number => {
+  const clamped = Math.min(Math.max(value, 0), MAX_DISTANCE);
+  return Math.round(clamped * 100) / 100;
 };
 
 // ── Weight ──────────────────────────────────────────

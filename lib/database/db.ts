@@ -102,6 +102,27 @@ export const initializeDatabase = async () => {
     // Column already exists
   }
 
+  // Add cardio_mode column to exercises
+  try {
+    await db.execAsync('ALTER TABLE exercises ADD COLUMN cardio_mode TEXT DEFAULT NULL');
+  } catch (e) {
+    // Column already exists
+  }
+
+  // Add distance column to sets
+  try {
+    await db.execAsync('ALTER TABLE sets ADD COLUMN distance REAL DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
+
+  // Add distance_unit column to user_settings
+  try {
+    await db.execAsync("ALTER TABLE user_settings ADD COLUMN distance_unit TEXT DEFAULT 'km'");
+  } catch (e) {
+    // Column already exists
+  }
+
   // Seed exercise library (inserts any missing exercises)
   await seedExerciseLibrary(db);
 

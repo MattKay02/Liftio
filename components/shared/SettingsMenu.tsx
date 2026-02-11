@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Modal, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Colors, Spacing, Typography } from '@/constants';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/Button';
+import { exportWorkoutData } from '@/lib/utils/csvExportImport';
 
 interface SettingsMenuProps {
   visible: boolean;
@@ -13,11 +15,26 @@ interface SettingsMenuProps {
 export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
   const settings = useSettingsStore((s) => s.settings);
   const updateWeightUnit = useSettingsStore((s) => s.updateWeightUnit);
+  const updateDistanceUnit = useSettingsStore((s) => s.updateDistanceUnit);
   const updateRestTimer = useSettingsStore((s) => s.updateRestTimer);
   const weightUnit = settings.weightUnit;
+  const distanceUnit = settings.distanceUnit;
   const defaultRestTimer = settings.defaultRestTimer;
+  const [isExporting, setIsExporting] = useState(false);
 
   const restTimerOptions = [60, 90, 120, 180];
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportWorkoutData();
+    } catch (e: any) {
+      Alert.alert('Export Failed', e.message || 'Something went wrong.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   return (
     <Modal
@@ -85,6 +102,49 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
               </View>
             </View>
 
+            {/* Distance Unit */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Distance Unit</Text>
+              <View style={styles.optionGroup}>
+                <Pressable
+                  style={[styles.optionButton, distanceUnit === 'km' && styles.optionButtonActive]}
+                  onPress={() => updateDistanceUnit('km')}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      distanceUnit === 'km' && styles.optionTextActive,
+                    ]}
+                  >
+                    Kilometers (km)
+                  </Text>
+                  {distanceUnit === 'km' && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    </View>
+                  )}
+                </Pressable>
+                <Pressable
+                  style={[styles.optionButton, distanceUnit === 'mi' && styles.optionButtonActive]}
+                  onPress={() => updateDistanceUnit('mi')}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      distanceUnit === 'mi' && styles.optionTextActive,
+                    ]}
+                  >
+                    Miles (mi)
+                  </Text>
+                  {distanceUnit === 'mi' && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+
             {/* Rest Timer */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Default Rest Timer</Text>
@@ -108,6 +168,21 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
                     </Text>
                   </Pressable>
                 ))}
+              </View>
+            </View>
+
+            {/* Data */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Data</Text>
+              <View style={styles.optionGroup}>
+                <Pressable
+                  style={styles.optionButton}
+                  onPress={handleExport}
+                  disabled={isExporting}
+                >
+                  <Text style={styles.optionText}>Export Data</Text>
+                  {isExporting && <ActivityIndicator size="small" color={Colors.textSecondary} />}
+                </Pressable>
               </View>
             </View>
 

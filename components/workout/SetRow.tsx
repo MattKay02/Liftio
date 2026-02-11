@@ -26,7 +26,7 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
     const prevSets = getPreviousSetData(exerciseName);
     if (prevSets && prevSets[setNumber - 1]) {
       const prev = prevSets[setNumber - 1];
-      setPreviousData(`${prev.reps} x ${prev.weight}`);
+      setPreviousData(`${prev.weight} x ${prev.reps}`);
     }
   }, []);
 
@@ -80,21 +80,21 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
         {previousData || '-'}
       </Text>
       <TextInput
-        style={[styles.input, styles.repsCol]}
-        value={reps}
-        onChangeText={handleRepsChange}
-        keyboardType="numeric"
-        maxLength={3}
-        placeholder="0"
-        placeholderTextColor={Colors.textTertiary}
-        editable={!set.isCompleted && !readonly}
-      />
-      <TextInput
         style={[styles.input, styles.weightCol]}
         value={weight}
         onChangeText={handleWeightChange}
         keyboardType="decimal-pad"
         maxLength={6}
+        placeholder="0"
+        placeholderTextColor={Colors.textTertiary}
+        editable={!set.isCompleted && !readonly}
+      />
+      <TextInput
+        style={[styles.input, styles.repsCol]}
+        value={reps}
+        onChangeText={handleRepsChange}
+        keyboardType="numeric"
+        maxLength={3}
         placeholder="0"
         placeholderTextColor={Colors.textTertiary}
         editable={!set.isCompleted && !readonly}
