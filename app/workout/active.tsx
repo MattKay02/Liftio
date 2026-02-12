@@ -143,7 +143,7 @@ export default function ActiveWorkoutScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{formatWeight(totalWeight, settings.weightUnit)}</Text>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{formatWeight(totalWeight, settings.weightUnit)}</Text>
             <Text style={styles.statLabel}>Volume</Text>
           </View>
         </View>

@@ -123,7 +123,7 @@ export const WorkoutDetailSlideUp = ({ visible, workout, onClose }: WorkoutDetai
           <View style={styles.header}>
             <View style={styles.headerContent}>
               <Text style={styles.workoutName}>{workout.name}</Text>
-              <Text style={styles.metadata}>
+              <Text style={styles.metadata} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                 {durationMinutes}m {durationSeconds}s  •  {formattedDate}
                 {getTotalWeight(workout.exercises) > 0 ? `  •  ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}
               </Text>

@@ -133,7 +133,7 @@ export const AllWorkoutsSlideUp = ({ visible, workouts, onClose, onViewWorkout, 
               >
                 <View style={styles.workoutCardContent}>
                   <Text style={styles.workoutName}>{workout.name}</Text>
-                  <Text style={styles.workoutMeta}>
+                  <Text style={styles.workoutMeta} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                     {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
                     {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
                     {getTotalWeight(workout.exercises) > 0 ? ` \u00B7 ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}

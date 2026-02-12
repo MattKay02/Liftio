@@ -2,6 +2,7 @@ import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
 import { useState, useEffect } from 'react';
 import { WorkoutSet } from '@/types/workout';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
+import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Colors, Spacing, Typography } from '@/constants';
 import { sanitizeReps, sanitizeWeight } from '@/lib/utils/validation';
@@ -18,6 +19,7 @@ interface SetRowProps {
 
 export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = false }: SetRowProps) => {
   const { updateSet, completeSet, removeSet, getPreviousSetData } = useWorkoutStore();
+  const { settings } = useSettingsStore();
   const [previousData, setPreviousData] = useState('');
   const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : '');
   const [weight, setWeight] = useState(set.weight > 0 ? set.weight.toString() : '');
@@ -26,7 +28,11 @@ export const SetRow = ({ set, setNumber, exerciseId, exerciseName, readonly = fa
     const prevSets = getPreviousSetData(exerciseName);
     if (prevSets && prevSets[setNumber - 1]) {
       const prev = prevSets[setNumber - 1];
-      setPreviousData(`${prev.weight} x ${prev.reps}`);
+      if (prev.weight > 0) {
+        setPreviousData(`${prev.weight}${settings.weightUnit} x ${prev.reps}`);
+      } else {
+        setPreviousData('-');
+      }
     }
   }, []);
 

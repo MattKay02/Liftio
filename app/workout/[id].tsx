@@ -257,7 +257,7 @@ export default function WorkoutDetailScreen() {
               {displayWorkout.exercises.length} exercise{displayWorkout.exercises.length !== 1 ? 's' : ''}
             </Text>
             {!displayWorkout.isTemplate && getTotalWeight(displayWorkout.exercises) > 0 && (
-              <Text style={styles.metaText}>{formatWeight(getTotalWeight(displayWorkout.exercises), weightUnit)}</Text>
+              <Text style={styles.metaText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{formatWeight(getTotalWeight(displayWorkout.exercises), weightUnit)}</Text>
             )}
           </View>
 

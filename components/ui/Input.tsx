@@ -1,15 +1,23 @@
-import { TextInput, StyleSheet, TextInputProps } from 'react-native';
+import { TextInput, StyleSheet, TextInputProps, Keyboard } from 'react-native';
 import { Colors, Spacing, Typography } from '@/constants';
 
 interface InputProps extends TextInputProps {
   variant?: 'default' | 'number';
 }
 
-export const Input = ({ variant = 'default', style, ...props }: InputProps) => {
+export const Input = ({ variant = 'default', style, onSubmitEditing, ...props }: InputProps) => {
+  const handleSubmitEditing = (e: any) => {
+    Keyboard.dismiss();
+    onSubmitEditing?.(e);
+  };
+
   return (
     <TextInput
       style={[styles.input, variant === 'number' && styles.numberInput, style]}
       placeholderTextColor={Colors.textTertiary}
+      returnKeyType="done"
+      blurOnSubmit={true}
+      onSubmitEditing={handleSubmitEditing}
       {...props}
     />
   );

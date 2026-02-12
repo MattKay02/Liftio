@@ -57,7 +57,7 @@ export default function FinishWorkoutScreen() {
             </View>
             {getTotalWeight(activeWorkout.exercises) > 0 && (
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>
+                <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>
                   {formatWeight(getTotalWeight(activeWorkout.exercises), weightUnit)}
                 </Text>
                 <Text style={styles.summaryLabel}>Volume</Text>

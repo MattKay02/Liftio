@@ -6,6 +6,7 @@ import { initializeDatabase } from '@/lib/database/db';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Colors } from '@/constants';
 import { FloatingWorkoutTimer } from '@/components/shared/FloatingWorkoutTimer';
+import { KeyboardDismissButton } from '@/components/shared/KeyboardDismissButton';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -53,6 +54,7 @@ export default function RootLayout() {
         <Stack.Screen name="workout/[id]" />
       </Stack>
       <FloatingWorkoutTimer />
+      <KeyboardDismissButton />
     </GestureHandlerRootView>
   );
 }

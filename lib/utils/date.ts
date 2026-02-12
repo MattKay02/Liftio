@@ -56,8 +56,5 @@ export const getTotalWeight = (exercises: { sets: { reps: number; weight: number
 };
 
 export const formatWeight = (value: number, unit: string): string => {
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}k ${unit}`;
-  }
-  return `${Math.round(value)} ${unit}`;
+  return `${Math.round(value).toLocaleString()} ${unit}`;
 };
