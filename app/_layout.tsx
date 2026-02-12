@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { initializeDatabase } from '@/lib/database/db';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Colors } from '@/constants';
+import { FloatingWorkoutTimer } from '@/components/shared/FloatingWorkoutTimer';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -51,6 +52,7 @@ export default function RootLayout() {
         />
         <Stack.Screen name="workout/[id]" />
       </Stack>
+      <FloatingWorkoutTimer />
     </GestureHandlerRootView>
   );
 }

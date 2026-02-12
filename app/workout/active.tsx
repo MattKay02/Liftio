@@ -1,13 +1,14 @@
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
+import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { getWorkoutById } from '@/lib/database/queries/workouts';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { Button } from '@/components/ui/Button';
 import { Colors, Spacing, Typography } from '@/constants';
-import { formatDuration } from '@/lib/utils/date';
+import { formatDurationWithSeconds, formatWeight } from '@/lib/utils/date';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_EXERCISES_PER_WORKOUT } from '@/lib/utils/validation';
 
@@ -21,8 +22,26 @@ export default function ActiveWorkoutScreen() {
     cancelWorkout,
   } = useWorkoutStore();
 
+  const { settings } = useSettingsStore();
+
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { totalSets, totalReps, totalWeight } = useMemo(() => {
+    if (!activeWorkout) return { totalSets: 0, totalReps: 0, totalWeight: 0 };
+    let sets = 0;
+    let reps = 0;
+    let weight = 0;
+    for (const exercise of activeWorkout.exercises) {
+      for (const set of exercise.sets) {
+        if (!set.isCompleted) continue;
+        sets += 1;
+        reps += set.reps;
+        weight += set.reps * set.weight;
+      }
+    }
+    return { totalSets: sets, totalReps: reps, totalWeight: weight };
+  }, [activeWorkout]);
 
   useEffect(() => {
     if (!isWorkoutActive) {
@@ -92,11 +111,30 @@ export default function ActiveWorkoutScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Button title="Back" onPress={() => router.back()} variant="text" />
-          <View style={styles.headerCenter}>
-            <Text style={styles.workoutName}>{activeWorkout.name}</Text>
-            <Text style={styles.timer}>{formatDuration(elapsed)}</Text>
-          </View>
+          <Text style={styles.workoutName}>{activeWorkout.name}</Text>
           <Button title="Finish" onPress={handleFinish} variant="text" />
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{formatDurationWithSeconds(elapsed)}</Text>
+            <Text style={styles.statLabel}>Duration</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{totalSets}</Text>
+            <Text style={styles.statLabel}>Sets</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{totalReps}</Text>
+            <Text style={styles.statLabel}>Reps</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{formatWeight(totalWeight, settings.weightUnit)}</Text>
+            <Text style={styles.statLabel}>Volume</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -142,21 +180,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
-  },
-  headerCenter: {
-    alignItems: 'center',
   },
   workoutName: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
   },
-  timer: {
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: Typography.fontSize.bodyLg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  statLabel: {
     fontSize: Typography.fontSize.caption,
-    color: Colors.textSecondary,
+    color: Colors.textTertiary,
     marginTop: 2,
+  },
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 24,
+    backgroundColor: Colors.border,
   },
   content: {
     flex: 1,
