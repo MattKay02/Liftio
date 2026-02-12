@@ -52,6 +52,10 @@ export const initializeDatabase = async () => {
   `);
 
   await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_exercises_name ON exercises(exercise_name);
+  `);
+
+  await db.execAsync(`
     CREATE TABLE IF NOT EXISTS sets (
       id TEXT PRIMARY KEY NOT NULL,
       exercise_id TEXT NOT NULL,

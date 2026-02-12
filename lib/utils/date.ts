@@ -58,3 +58,8 @@ export const getTotalWeight = (exercises: { sets: { reps: number; weight: number
 export const formatWeight = (value: number, unit: string): string => {
   return `${Math.round(value).toLocaleString()} ${unit}`;
 };
+
+export const formatChartDate = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};

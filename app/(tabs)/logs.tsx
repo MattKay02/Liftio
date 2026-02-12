@@ -15,6 +15,7 @@ import { getAllWorkouts, getCompletedWorkouts } from '@/lib/database/queries/wor
 import { getTimeSinceString, formatDuration, formatTimeOfDay, getTotalWeight, formatWeight } from '@/lib/utils/date';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Pencil, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ExerciseStatsSection } from '@/components/stats/ExerciseStatsSection';
 
 export default function LogsScreen() {
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
@@ -139,6 +140,10 @@ export default function LogsScreen() {
             )}
           </View>
         )}
+
+        <View style={styles.statsSection}>
+          <ExerciseStatsSection />
+        </View>
       </ScrollView>
 
       <WorkoutDetailSlideUp
@@ -239,5 +244,8 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.body,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textSecondary,
+  },
+  statsSection: {
+    paddingHorizontal: Spacing.md,
   },
 });
