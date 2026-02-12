@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { X } from 'lucide-react-native';
-import { Colors, Spacing, Typography } from '@/constants';
+import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/Button';
@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '80%',
+    ...Shadows.elevated,
   },
   header: {
     flexDirection: 'row',

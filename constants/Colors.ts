@@ -11,7 +11,7 @@ export const Colors = {
 
   // UI Elements
   border: '#404040',          // Subtle borders
-  accent: '#FFFFFF',          // Primary buttons
+  accent: '#C0C0C0',          // Primary buttons
   accentText: '#1A1A1A',      // Text on white buttons
   highlight: '#4B5563',       // Calendar day highlight circle
 

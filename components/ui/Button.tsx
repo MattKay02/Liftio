@@ -1,4 +1,5 @@
-import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { AnimatedPressable } from './AnimatedPressable';
 import { Colors, Spacing, Typography } from '@/constants';
 
 interface ButtonProps {
@@ -22,19 +23,14 @@ export const Button = ({
   const labelStyle = textVariantStyles[variant] ?? textVariantStyles.primary;
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.button,
-        buttonStyle,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-        style,
-      ]}
+    <AnimatedPressable
+      scaleValue={variant === 'text' ? 0.97 : 0.96}
+      style={[styles.button, buttonStyle, disabled && styles.disabled, style]}
       onPress={onPress}
       disabled={disabled}
     >
       <Text style={[styles.text, labelStyle, textStyle]}>{title}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 };
 
@@ -50,9 +46,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: Typography.fontSize.bodyLg,
     fontWeight: Typography.fontWeight.semibold,
-  },
-  pressed: {
-    opacity: 0.8,
   },
   disabled: {
     backgroundColor: Colors.bgElevated,

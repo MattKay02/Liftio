@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, SafeAreaView, StyleSheet } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors, Typography, Spacing } from '@/constants';
+import { Colors, Typography, Spacing, Shadows } from '@/constants';
+import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
 import { Header } from '@/components/shared/Header';
 import { CalendarView } from '@/components/shared/CalendarView';
 import { WorkoutDetailSlideUp } from '@/components/shared/WorkoutDetailSlideUp';
@@ -68,7 +70,11 @@ export default function LogsScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header showSettings={true} onSettingsPress={() => setShowSettings(true)} />
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        decelerationRate="fast"
+      >
         <CalendarView
           workouts={workouts}
           onSelectDate={handleSelectDate}
@@ -90,45 +96,46 @@ export default function LogsScreen() {
                 )
               )}
             </Pressable>
-            {(isExpanded ? recentWorkouts : recentWorkouts.slice(0, 1)).map((workout) => (
-              <Pressable
+            {(isExpanded ? recentWorkouts : recentWorkouts.slice(0, 1)).map((workout, index) => (
+              <Animated.View
                 key={workout.id}
-                style={({ pressed }) => [
-                  styles.workoutCard,
-                  pressed && styles.workoutCardPressed,
-                ]}
-                onPress={() => handleViewWorkout(workout)}
+                entering={FadeInDown.delay(index * 60).duration(300)}
               >
-                <View style={styles.workoutCardContent}>
-                  <Text style={styles.workoutName}>{workout.name}</Text>
-                  <Text style={styles.workoutMeta}>
-                    {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
-                    {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
-                    {getTotalWeight(workout.exercises) > 0 ? ` \u00B7 ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}
-                  </Text>
-                  <Text style={styles.workoutDate}>
-                    {getTimeSinceString(workout.date)} {'\u00B7'} {formatTimeOfDay(workout.date)}
-                  </Text>
-                </View>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.editButton,
-                    pressed && styles.editButtonPressed,
-                  ]}
-                  onPress={() => handleEditWorkout(workout)}
-                  hitSlop={8}
+                <AnimatedPressable
+                  scaleValue={0.98}
+                  style={styles.workoutCard}
+                  onPress={() => handleViewWorkout(workout)}
                 >
-                  <Pencil size={16} color={Colors.textSecondary} />
-                </Pressable>
-              </Pressable>
+                  <View style={styles.workoutCardContent}>
+                    <Text style={styles.workoutName}>{workout.name}</Text>
+                    <Text style={styles.workoutMeta}>
+                      {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
+                      {workout.duration ? ` \u00B7 ${formatDuration(workout.duration)}` : ''}
+                      {getTotalWeight(workout.exercises) > 0 ? ` \u00B7 ${formatWeight(getTotalWeight(workout.exercises), weightUnit)}` : ''}
+                    </Text>
+                    <Text style={styles.workoutDate}>
+                      {getTimeSinceString(workout.date)} {'\u00B7'} {formatTimeOfDay(workout.date)}
+                    </Text>
+                  </View>
+                  <AnimatedPressable
+                    scaleValue={0.9}
+                    style={styles.editButton}
+                    onPress={() => handleEditWorkout(workout)}
+                    hitSlop={8}
+                  >
+                    <Pencil size={16} color={Colors.textSecondary} />
+                  </AnimatedPressable>
+                </AnimatedPressable>
+              </Animated.View>
             ))}
             {isExpanded && allCompletedWorkouts.length > 6 && (
-              <Pressable
+              <AnimatedPressable
+                scaleValue={0.98}
                 style={styles.viewAllButton}
                 onPress={() => setShowAllWorkouts(true)}
               >
                 <Text style={styles.viewAllText}>View All Workouts</Text>
-              </Pressable>
+              </AnimatedPressable>
             )}
           </View>
         )}
@@ -194,9 +201,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-  },
-  workoutCardPressed: {
-    opacity: 0.7,
+    ...Shadows.card,
   },
   workoutCardContent: {
     flex: 1,
@@ -220,9 +225,6 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     borderRadius: 8,
     backgroundColor: Colors.bgElevated,
-  },
-  editButtonPressed: {
-    opacity: 0.6,
   },
   viewAllButton: {
     alignItems: 'center',

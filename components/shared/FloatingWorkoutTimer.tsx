@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { formatDurationWithSeconds } from '@/lib/utils/date';
-import { Colors, Typography } from '@/constants';
+import { Colors, Typography, Shadows } from '@/constants';
+import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
 
 const HIDDEN_ROUTES = ['/workout/active', '/workout/add-exercise', '/workout/finish'];
 
@@ -38,12 +39,13 @@ export function FloatingWorkoutTimer() {
 
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
-      <Pressable
-        style={({ pressed }) => [styles.bubble, pressed && styles.bubblePressed]}
+      <AnimatedPressable
+        scaleValue={0.92}
+        style={styles.bubble}
         onPress={() => router.push('/workout/active')}
       >
         <Text style={styles.timer}>{formatDurationWithSeconds(elapsed)}</Text>
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }
@@ -65,10 +67,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.green600,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  bubblePressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.95 }],
+    ...Shadows.elevated,
   },
   timer: {
     fontSize: Typography.fontSize.caption,

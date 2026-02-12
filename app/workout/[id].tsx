@@ -16,7 +16,7 @@ import { generateUUID } from '@/lib/utils/uuid';
 import { consumePendingExercise } from '@/lib/utils/pendingExercise';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { SharedValue } from 'react-native-reanimated';
+import Animated, { SharedValue, FadeInDown } from 'react-native-reanimated';
 
 export default function WorkoutDetailScreen() {
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
@@ -245,6 +245,7 @@ export default function WorkoutDetailScreen() {
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
+          decelerationRate="fast"
         >
           <Text style={styles.workoutName}>{displayWorkout.name}</Text>
 
@@ -264,7 +265,7 @@ export default function WorkoutDetailScreen() {
             <Text style={styles.notes}>{displayWorkout.notes}</Text>
           )}
 
-          {displayWorkout.exercises.map((exercise) => {
+          {displayWorkout.exercises.map((exercise, exerciseIndex) => {
             const isCardio = exercise.cardioMode !== null || isCardioExercise(exercise.exerciseName);
             const cardioMode: CardioMode = exercise.cardioMode ?? 'time';
 
@@ -277,7 +278,11 @@ export default function WorkoutDetailScreen() {
             const fieldFlex = fieldCount === 1 ? 2 : 1.2;
 
             return (
-              <View key={exercise.id} style={styles.exerciseSection}>
+              <Animated.View
+                key={exercise.id}
+                style={styles.exerciseSection}
+                entering={FadeInDown.delay(exerciseIndex * 80).duration(350)}
+              >
                 <View style={styles.exerciseHeader}>
                   <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
                   {isEditing && (
@@ -377,7 +382,7 @@ export default function WorkoutDetailScreen() {
                     <Text style={styles.addSetText}>+ Add Set</Text>
                   </Pressable>
                 )}
-              </View>
+              </Animated.View>
             );
           })}
 

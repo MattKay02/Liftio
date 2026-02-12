@@ -36,11 +36,11 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.bg }}>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="workout/active"
-          options={{ gestureEnabled: false }}
+          options={{ gestureEnabled: false, animation: 'slide_from_bottom' }}
         />
         <Stack.Screen
           name="workout/add-exercise"

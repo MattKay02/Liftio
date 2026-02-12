@@ -1,8 +1,10 @@
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors, Typography, Spacing } from '@/constants';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+import { Colors, Typography, Spacing, Shadows } from '@/constants';
+import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/shared/Header';
 import { WorkoutWithExercises } from '@/types/workout';
@@ -67,140 +69,141 @@ export default function HomeScreen() {
     );
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    const updated = [...templates];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    setTemplates(updated);
-    reorderTemplates(updated.map((t) => t.id));
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index === templates.length - 1) return;
-    const updated = [...templates];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    setTemplates(updated);
-    reorderTemplates(updated.map((t) => t.id));
+  const handleDragEnd = ({ data }: { data: WorkoutWithExercises[] }) => {
+    setTemplates(data);
+    reorderTemplates(data.map((t) => t.id));
   };
 
   const toggleEdit = () => {
     setIsEditing((prev) => !prev);
   };
 
+  const renderTemplateItem = useCallback(
+    ({ item: template, drag, isActive }: RenderItemParams<WorkoutWithExercises>) => (
+      <ScaleDecorator>
+        <View style={[styles.workoutCard, isActive && styles.workoutCardDragging]}>
+          <Pressable
+            style={styles.workoutCardContent}
+            onPress={() => !isEditing && handleViewWorkout(template)}
+            onLongPress={drag}
+            disabled={isEditing}
+          >
+            <Text style={styles.workoutName}>{template.name}</Text>
+            <Text style={styles.workoutMeta}>
+              {template.exercises.length} exercise{template.exercises.length !== 1 ? 's' : ''}
+            </Text>
+            <View style={styles.exercisePreview}>
+              {template.exercises.slice(0, 4).map((ex, i) => (
+                <Text key={`${ex.id}-${i}`} style={styles.exercisePreviewText}>
+                  {ex.exerciseName}{i < Math.min(template.exercises.length, 4) - 1 ? '  \u00B7  ' : ''}
+                </Text>
+              ))}
+              {template.exercises.length > 4 && (
+                <Text style={styles.exercisePreviewMore}>
+                  +{template.exercises.length - 4} more
+                </Text>
+              )}
+            </View>
+          </Pressable>
+
+          {isEditing ? (
+            <AnimatedPressable
+              scaleValue={0.9}
+              style={styles.deleteButton}
+              onPress={() => handleDeleteTemplate(template)}
+              hitSlop={8}
+            >
+              <Text style={styles.deleteButtonText}>✕</Text>
+            </AnimatedPressable>
+          ) : (
+            <AnimatedPressable
+              scaleValue={0.96}
+              style={styles.startButton}
+              onPress={() => handleStartFromTemplate(template)}
+              hitSlop={8}
+            >
+              <Text style={styles.startButtonText}>Start Workout</Text>
+            </AnimatedPressable>
+          )}
+        </View>
+      </ScaleDecorator>
+    ),
+    [isEditing, templates]
+  );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header showSettings={false} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {isWorkoutActive && (
-          <Button
-            title="RESUME WORKOUT"
-            onPress={handleResumeWorkout}
-            style={styles.resumeButton}
-          />
-        )}
-
-        {/* My Workouts - Custom Templates */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>My Workouts</Text>
-            {templates.length > 0 && (
-              <Pressable onPress={toggleEdit} hitSlop={8}>
-                <Text style={styles.editButtonText}>
-                  {isEditing ? 'Done' : 'Edit'}
-                </Text>
-              </Pressable>
-            )}
-          </View>
-
-          {templates.length > 0 ? (
-            templates.map((template, index) => (
-              <View key={template.id} style={styles.workoutCard}>
-                {isEditing && (
-                  <View style={styles.editControls}>
-                    <Pressable
-                      onPress={() => handleMoveUp(index)}
-                      style={[styles.reorderButton, index === 0 && styles.reorderButtonDisabled]}
-                      hitSlop={4}
-                      disabled={index === 0}
-                    >
-                      <Text style={[styles.reorderArrow, index === 0 && styles.reorderArrowDisabled]}>▲</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleMoveDown(index)}
-                      style={[styles.reorderButton, index === templates.length - 1 && styles.reorderButtonDisabled]}
-                      hitSlop={4}
-                      disabled={index === templates.length - 1}
-                    >
-                      <Text style={[styles.reorderArrow, index === templates.length - 1 && styles.reorderArrowDisabled]}>▼</Text>
-                    </Pressable>
-                  </View>
-                )}
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.workoutCardContent,
-                    pressed && !isEditing && styles.workoutCardPressed,
-                  ]}
-                  onPress={() => !isEditing && handleViewWorkout(template)}
-                  disabled={isEditing}
-                >
-                  <Text style={styles.workoutName}>{template.name}</Text>
-                  <Text style={styles.workoutMeta}>
-                    {template.exercises.length} exercise{template.exercises.length !== 1 ? 's' : ''}
+      {templates.length > 0 ? (
+        <DraggableFlatList
+          data={templates}
+          keyExtractor={(item) => item.id}
+          renderItem={renderTemplateItem}
+          onDragEnd={handleDragEnd}
+          containerStyle={styles.container}
+          contentContainerStyle={styles.content}
+          ListHeaderComponent={
+            <View>
+              {isWorkoutActive && (
+                <Button
+                  title="RESUME WORKOUT"
+                  onPress={handleResumeWorkout}
+                  style={styles.resumeButton}
+                />
+              )}
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>My Workouts</Text>
+                <Pressable onPress={toggleEdit} hitSlop={8}>
+                  <Text style={styles.editButtonText}>
+                    {isEditing ? 'Done' : 'Edit'}
                   </Text>
-                  <View style={styles.exercisePreview}>
-                    {template.exercises.slice(0, 4).map((ex, i) => (
-                      <Text key={`${ex.id}-${i}`} style={styles.exercisePreviewText}>
-                        {ex.exerciseName}{i < Math.min(template.exercises.length, 4) - 1 ? '  \u00B7  ' : ''}
-                      </Text>
-                    ))}
-                    {template.exercises.length > 4 && (
-                      <Text style={styles.exercisePreviewMore}>
-                        +{template.exercises.length - 4} more
-                      </Text>
-                    )}
-                  </View>
                 </Pressable>
-
-                {isEditing ? (
-                  <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteTemplate(template)}
-                    hitSlop={8}
-                  >
-                    <Text style={styles.deleteButtonText}>✕</Text>
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.startButton,
-                      pressed && styles.startButtonPressed,
-                    ]}
-                    onPress={() => handleStartFromTemplate(template)}
-                    hitSlop={8}
-                  >
-                    <Text style={styles.startButtonText}>Start Workout</Text>
-                  </Pressable>
-                )}
               </View>
-            ))
-          ) : (
+            </View>
+          }
+          ListFooterComponent={
+            !isEditing ? (
+              <AnimatedPressable
+                scaleValue={0.98}
+                style={styles.createButton}
+                onPress={handleCreateTemplate}
+              >
+                <View style={styles.createButtonIcon}>
+                  <Plus size={20} color={Colors.textPrimary} />
+                </View>
+                <View style={styles.createButtonTextContainer}>
+                  <Text style={styles.createButtonTitle}>Create Custom Workout</Text>
+                  <Text style={styles.createButtonSubtitle}>
+                    Build a workout framework with your exercises
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            ) : null
+          }
+        />
+      ) : (
+        <View style={[styles.container, styles.content]}>
+          {isWorkoutActive && (
+            <Button
+              title="RESUME WORKOUT"
+              onPress={handleResumeWorkout}
+              style={styles.resumeButton}
+            />
+          )}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>My Workouts</Text>
+            </View>
             <View style={styles.emptyCard}>
               <Text style={styles.emptyText}>No custom workouts yet</Text>
               <Text style={styles.emptySubtext}>
                 Create one to get started quickly
               </Text>
             </View>
-          )}
-        </View>
-
-        {/* Create Custom Workout */}
-        {!isEditing && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.createButton,
-              pressed && styles.createButtonPressed,
-            ]}
+          </View>
+          <AnimatedPressable
+            scaleValue={0.98}
+            style={styles.createButton}
             onPress={handleCreateTemplate}
           >
             <View style={styles.createButtonIcon}>
@@ -212,10 +215,9 @@ export default function HomeScreen() {
                 Build a workout framework with your exercises
               </Text>
             </View>
-          </Pressable>
-        )}
-
-      </ScrollView>
+          </AnimatedPressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -245,6 +247,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
   },
   sectionLabel: {
@@ -268,15 +271,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    ...Shadows.card,
   },
-  workoutCardPressed: {
-    opacity: 0.7,
+  workoutCardDragging: {
+    opacity: 0.9,
+    borderColor: Colors.textSecondary,
   },
   workoutCardContent: {
     flex: 1,
   },
   workoutName: {
-    fontSize: Typography.fontSize.bodyLg,
+    fontSize: Typography.fontSize.title,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
     marginBottom: Spacing.xs,
@@ -300,28 +305,6 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginLeft: 4,
   },
-  editControls: {
-    marginRight: Spacing.sm,
-    gap: 6,
-  },
-  reorderButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: Colors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reorderButtonDisabled: {
-    opacity: 0.3,
-  },
-  reorderArrow: {
-    fontSize: 12,
-    color: Colors.textPrimary,
-  },
-  reorderArrowDisabled: {
-    color: Colors.textTertiary,
-  },
   deleteButton: {
     width: 32,
     height: 32,
@@ -337,18 +320,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   startButton: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: 8,
-    backgroundColor: Colors.bgElevated,
-  },
-  startButtonPressed: {
-    opacity: 0.7,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md + 4,
+    borderRadius: 12,
+    backgroundColor: Colors.accent,
   },
   startButtonText: {
-    fontSize: Typography.fontSize.caption,
+    fontSize: Typography.fontSize.body,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textSecondary,
+    color: Colors.accentText,
   },
   createButton: {
     flexDirection: 'row',
@@ -360,9 +340,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     padding: Spacing.md,
     marginTop: Spacing.md,
-  },
-  createButtonPressed: {
-    opacity: 0.7,
   },
   createButtonIcon: {
     width: 40,

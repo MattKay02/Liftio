@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { X } from 'lucide-react-native';
-import { Colors, Spacing, Typography } from '@/constants';
+import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { WorkoutWithExercises } from '@/types/workout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -177,6 +177,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '85%',
+    ...Shadows.elevated,
   },
   handleContainer: {
     alignItems: 'center',

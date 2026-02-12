@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { X, Pencil } from 'lucide-react-native';
-import { Colors, Spacing, Typography } from '@/constants';
+import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { WorkoutWithExercises } from '@/types/workout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTimeSinceString, formatDuration, formatTimeOfDay, getTotalWeight, formatWeight } from '@/lib/utils/date';
@@ -180,6 +180,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '90%',
+    ...Shadows.elevated,
   },
   handleContainer: {
     alignItems: 'center',

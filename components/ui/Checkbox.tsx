@@ -1,4 +1,5 @@
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
+import { AnimatedPressable } from './AnimatedPressable';
 import { Colors } from '@/constants';
 
 interface CheckboxProps {
@@ -9,13 +10,14 @@ interface CheckboxProps {
 
 export const Checkbox = ({ checked, onPress, disabled = false }: CheckboxProps) => {
   return (
-    <Pressable
+    <AnimatedPressable
+      scaleValue={0.9}
       style={[styles.checkbox, checked && styles.checked]}
       onPress={onPress}
       disabled={disabled}
     >
       {checked && <Text style={styles.checkmark}>✓</Text>}
-    </Pressable>
+    </AnimatedPressable>
   );
 };
 

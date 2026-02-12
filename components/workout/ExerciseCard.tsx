@@ -6,7 +6,7 @@ import { CardioSetRow } from './CardioSetRow';
 import { CardioModePicker } from './CardioModePicker';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
-import { Colors, Spacing, Typography } from '@/constants';
+import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { MAX_SETS_PER_EXERCISE } from '@/lib/utils/validation';
 import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
 
@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+    ...Shadows.card,
   },
   cardDragging: {
     opacity: 0.9,
