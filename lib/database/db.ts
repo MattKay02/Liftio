@@ -123,6 +123,13 @@ export const initializeDatabase = async () => {
     // Column already exists
   }
 
+  // Add premade_id column to workouts (for tracking premade templates)
+  try {
+    await db.execAsync('ALTER TABLE workouts ADD COLUMN premade_id TEXT DEFAULT NULL');
+  } catch (e) {
+    // Column already exists
+  }
+
   // Seed exercise library (inserts any missing exercises)
   await seedExerciseLibrary(db);
 

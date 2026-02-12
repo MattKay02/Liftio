@@ -11,12 +11,14 @@ import { WorkoutWithExercises } from '@/types/workout';
 import { getCustomTemplates, deleteWorkout, reorderTemplates } from '@/lib/database/queries/workouts';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus } from 'lucide-react-native';
+import { Plus, Layers } from 'lucide-react-native';
 import { MAX_CUSTOM_WORKOUTS } from '@/lib/utils/validation';
+import { PremadeWorkoutsSlideUp } from '@/components/shared/PremadeWorkoutsSlideUp';
 
 export default function HomeScreen() {
   const [templates, setTemplates] = useState<WorkoutWithExercises[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPremadeSlideUp, setShowPremadeSlideUp] = useState(false);
   const { isWorkoutActive } = useWorkoutStore();
 
   useFocusEffect(
@@ -163,21 +165,38 @@ export default function HomeScreen() {
           }
           ListFooterComponent={
             !isEditing ? (
-              <AnimatedPressable
-                scaleValue={0.98}
-                style={styles.createButton}
-                onPress={handleCreateTemplate}
-              >
-                <View style={styles.createButtonIcon}>
-                  <Plus size={20} color={Colors.textPrimary} />
-                </View>
-                <View style={styles.createButtonTextContainer}>
-                  <Text style={styles.createButtonTitle}>Create Custom Workout</Text>
-                  <Text style={styles.createButtonSubtitle}>
-                    Build a workout framework with your exercises
-                  </Text>
-                </View>
-              </AnimatedPressable>
+              <View>
+                <AnimatedPressable
+                  scaleValue={0.98}
+                  style={styles.createButton}
+                  onPress={handleCreateTemplate}
+                >
+                  <View style={styles.createButtonIcon}>
+                    <Plus size={20} color={Colors.textPrimary} />
+                  </View>
+                  <View style={styles.createButtonTextContainer}>
+                    <Text style={styles.createButtonTitle}>Create Custom Workout</Text>
+                    <Text style={styles.createButtonSubtitle}>
+                      Build a workout framework with your exercises
+                    </Text>
+                  </View>
+                </AnimatedPressable>
+                <AnimatedPressable
+                  scaleValue={0.98}
+                  style={styles.createButton}
+                  onPress={() => setShowPremadeSlideUp(true)}
+                >
+                  <View style={styles.createButtonIcon}>
+                    <Layers size={20} color={Colors.textPrimary} />
+                  </View>
+                  <View style={styles.createButtonTextContainer}>
+                    <Text style={styles.createButtonTitle}>Browse Premade Workouts</Text>
+                    <Text style={styles.createButtonSubtitle}>
+                      Push, Pull, Legs & more
+                    </Text>
+                  </View>
+                </AnimatedPressable>
+              </View>
             ) : null
           }
         />
@@ -216,8 +235,28 @@ export default function HomeScreen() {
               </Text>
             </View>
           </AnimatedPressable>
+          <AnimatedPressable
+            scaleValue={0.98}
+            style={styles.createButton}
+            onPress={() => setShowPremadeSlideUp(true)}
+          >
+            <View style={styles.createButtonIcon}>
+              <Layers size={20} color={Colors.textPrimary} />
+            </View>
+            <View style={styles.createButtonTextContainer}>
+              <Text style={styles.createButtonTitle}>Browse Premade Workouts</Text>
+              <Text style={styles.createButtonSubtitle}>
+                Push, Pull, Legs & more
+              </Text>
+            </View>
+          </AnimatedPressable>
         </View>
       )}
+      <PremadeWorkoutsSlideUp
+        visible={showPremadeSlideUp}
+        onClose={() => setShowPremadeSlideUp(false)}
+        onWorkoutAdded={() => setTemplates(getCustomTemplates())}
+      />
     </SafeAreaView>
   );
 }

@@ -194,7 +194,7 @@ export const secondsToTimeDisplay = (seconds: number): string => {
 export const getCustomTemplateCount = (): number => {
   const db = getDb();
   const row = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM workouts WHERE is_template = 1'
+    'SELECT COUNT(*) as count FROM workouts WHERE is_template = 1 AND premade_id IS NULL'
   );
   return row?.count ?? 0;
 };

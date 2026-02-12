@@ -143,15 +143,15 @@ export const getCompletedWorkouts = (limit: number = 20): WorkoutWithExercises[]
   return workoutRows.map(mapWorkoutWithExercises);
 };
 
-export const saveTemplate = (name: string, exerciseNames: string[]) => {
+export const saveTemplate = (name: string, exerciseNames: string[], premadeId?: string) => {
   const db = getDb();
   const now = Date.now();
   const workoutId = generateUUID();
 
   db.runSync(
-    `INSERT INTO workouts (id, name, date, duration, notes, is_template, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
-    [workoutId, name, 0, null, null, now, now]
+    `INSERT INTO workouts (id, name, date, duration, notes, is_template, premade_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+    [workoutId, name, 0, null, null, premadeId ?? null, now, now]
   );
 
   for (let i = 0; i < exerciseNames.length; i++) {
@@ -173,6 +173,14 @@ export const saveTemplate = (name: string, exerciseNames: string[]) => {
       );
     }
   }
+};
+
+export const getAddedPremadeIds = (): Set<string> => {
+  const db = getDb();
+  const rows = db.getAllSync<{ premade_id: string }>(
+    'SELECT premade_id FROM workouts WHERE premade_id IS NOT NULL AND is_template = 1'
+  );
+  return new Set(rows.map((r) => r.premade_id));
 };
 
 export const getWorkoutById = (id: string): WorkoutWithExercises | null => {
