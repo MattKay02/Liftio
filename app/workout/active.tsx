@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { getWorkoutById } from '@/lib/database/queries/workouts';
@@ -11,6 +11,7 @@ import { Colors, Spacing, Typography } from '@/constants';
 import { formatDurationWithSeconds, formatWeight } from '@/lib/utils/date';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_EXERCISES_PER_WORKOUT } from '@/lib/utils/validation';
+import { ExerciseWithSets } from '@/types/workout';
 
 export default function ActiveWorkoutScreen() {
   const params = useLocalSearchParams<{ templateId?: string }>();
@@ -20,6 +21,7 @@ export default function ActiveWorkoutScreen() {
     workoutStartTime,
     startWorkout,
     cancelWorkout,
+    reorderExercises,
   } = useWorkoutStore();
 
   const { settings } = useSettingsStore();
@@ -102,6 +104,15 @@ export default function ActiveWorkoutScreen() {
     router.push('/workout/add-exercise');
   };
 
+  const renderExerciseItem = useCallback(
+    ({ item, drag, isActive }: RenderItemParams<ExerciseWithSets>) => (
+      <ScaleDecorator>
+        <ExerciseCard exercise={item} onLongPress={drag} isBeingDragged={isActive} />
+      </ScaleDecorator>
+    ),
+    []
+  );
+
   if (!activeWorkout) {
     return null;
   }
@@ -137,29 +148,31 @@ export default function ActiveWorkoutScreen() {
           </View>
         </View>
 
-        <ScrollView
-          style={styles.content}
+        <DraggableFlatList
+          data={activeWorkout.exercises}
+          keyExtractor={(item) => item.id}
+          renderItem={renderExerciseItem}
+          onDragEnd={({ from, to }) => reorderExercises(from, to)}
+          containerStyle={styles.content}
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
-        >
-          {activeWorkout.exercises.map((exercise) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} />
-          ))}
-
-          <Button
-            title="+ Add Exercise"
-            onPress={handleAddExercise}
-            variant="secondary"
-            style={styles.addButton}
-          />
-
-          <Button
-            title="Cancel Workout"
-            onPress={handleCancel}
-            variant="destructive"
-            style={styles.cancelButton}
-          />
-        </ScrollView>
+          ListFooterComponent={
+            <View>
+              <Button
+                title="+ Add Exercise"
+                onPress={handleAddExercise}
+                variant="secondary"
+                style={styles.addButton}
+              />
+              <Button
+                title="Cancel Workout"
+                onPress={handleCancel}
+                variant="destructive"
+                style={styles.cancelButton}
+              />
+            </View>
+          }
+        />
       </View>
     </SafeAreaView>
   );

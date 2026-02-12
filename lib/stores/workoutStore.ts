@@ -30,6 +30,8 @@ interface WorkoutState {
   removeSet: (exerciseId: string, setId: string) => void;
   completeSet: (exerciseId: string, setId: string) => void;
 
+  reorderExercises: (fromIndex: number, toIndex: number) => void;
+
   updateCardioMode: (exerciseId: string, mode: CardioMode) => void;
 
   getPreviousSetData: (exerciseName: string) => WorkoutSet[];
@@ -287,6 +289,25 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const exercise = activeWorkout.exercises.find((e) => e.id === exerciseId);
     const currentSet = exercise?.sets.find((s) => s.id === setId);
     get().updateSet(exerciseId, setId, { isCompleted: !currentSet?.isCompleted });
+  },
+
+  reorderExercises: (fromIndex, toIndex) => {
+    const { activeWorkout } = get();
+    if (!activeWorkout) return;
+
+    const exercises = [...activeWorkout.exercises];
+    const [moved] = exercises.splice(fromIndex, 1);
+    exercises.splice(toIndex, 0, moved);
+
+    // Update orderIndex on each exercise
+    const reindexed = exercises.map((e, i) => ({ ...e, orderIndex: i }));
+
+    set({
+      activeWorkout: {
+        ...activeWorkout,
+        exercises: reindexed,
+      },
+    });
   },
 
   updateCardioMode: (exerciseId, mode) => {

@@ -13,9 +13,11 @@ import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
 interface ExerciseCardProps {
   exercise: ExerciseWithSets;
   readonly?: boolean;
+  onLongPress?: () => void;
+  isBeingDragged?: boolean;
 }
 
-export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) => {
+export const ExerciseCard = ({ exercise, readonly = false, onLongPress, isBeingDragged }: ExerciseCardProps) => {
   const { removeExercise, addSet, updateCardioMode } = useWorkoutStore();
   const distanceUnit = useSettingsStore((s) => s.settings.distanceUnit);
   const isCardio = useMemo(() => isCardioExercise(exercise.exerciseName), [exercise.exerciseName]);
@@ -39,7 +41,10 @@ export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) 
   }
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      onLongPress={onLongPress}
+      style={[styles.card, isBeingDragged && styles.cardDragging]}
+    >
       <View style={styles.header}>
         <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
         {!readonly && (
@@ -126,7 +131,7 @@ export const ExerciseCard = ({ exercise, readonly = false }: ExerciseCardProps) 
           <Text style={styles.addSetText}>+ Add Set</Text>
         </Pressable>
       )}
-    </View>
+    </Pressable>
   );
 };
 
@@ -138,6 +143,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+  },
+  cardDragging: {
+    opacity: 0.9,
+    borderColor: Colors.textSecondary,
   },
   header: {
     flexDirection: 'row',
