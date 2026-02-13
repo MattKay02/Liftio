@@ -2,16 +2,17 @@ import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Colors, Spacing, Typography } from '@/constants';
-import { WeightDataPoint } from '@/lib/database/queries/exerciseStats';
 import { formatChartDate } from '@/lib/utils/date';
+import { OverviewDataPoint } from '@/lib/database/queries/exerciseStats';
 
-interface WeightProgressChartProps {
-  dataPoints: WeightDataPoint[];
-  weightUnit: string;
+interface StatsLineChartProps {
+  dataPoints: OverviewDataPoint[];
+  yAxisSuffix?: string;
+  tooltipFormatter?: (value: number) => string;
 }
 
-export const WeightProgressChart = React.memo(
-  ({ dataPoints, weightUnit }: WeightProgressChartProps) => {
+export const StatsLineChart = React.memo(
+  ({ dataPoints, yAxisSuffix = '', tooltipFormatter }: StatsLineChartProps) => {
     const { width: screenWidth } = useWindowDimensions();
     const chartWidth = screenWidth - Spacing.md * 2 - Spacing.md * 2 - 40;
 
@@ -20,7 +21,7 @@ export const WeightProgressChart = React.memo(
         <View style={[styles.container, styles.emptyContainer]}>
           <Text style={styles.emptyText}>
             {dataPoints.length === 0
-              ? 'No data for this exercise'
+              ? 'No data yet'
               : 'Complete more workouts to see progress'}
           </Text>
         </View>
@@ -30,7 +31,7 @@ export const WeightProgressChart = React.memo(
     const labelInterval = Math.max(1, Math.ceil(dataPoints.length / 6));
 
     const chartData = dataPoints.map((dp, i) => ({
-      value: dp.weight,
+      value: dp.value,
       label: i % labelInterval === 0 ? formatChartDate(dp.date) : '',
       labelTextStyle: { color: Colors.textTertiary, fontSize: 9 },
     }));
@@ -39,6 +40,8 @@ export const WeightProgressChart = React.memo(
       30,
       Math.min(60, chartWidth / Math.max(dataPoints.length - 1, 1))
     );
+
+    const formatTooltip = tooltipFormatter ?? ((v: number) => `${v}${yAxisSuffix}`);
 
     return (
       <View style={styles.container}>
@@ -54,9 +57,6 @@ export const WeightProgressChart = React.memo(
           dataPointsColor={Colors.accent}
           dataPointsRadius={4}
           curved
-          areaChart
-          startFillColor="rgba(192, 192, 192, 0.15)"
-          endFillColor="rgba(192, 192, 192, 0.01)"
           noOfSections={4}
           yAxisColor={Colors.border}
           xAxisColor={Colors.border}
@@ -64,7 +64,7 @@ export const WeightProgressChart = React.memo(
           xAxisLabelTextStyle={{ color: Colors.textTertiary, fontSize: 9 }}
           rulesType="dashed"
           rulesColor={Colors.bgElevated}
-          yAxisLabelSuffix={` ${weightUnit}`}
+          yAxisLabelSuffix={yAxisSuffix}
           hideRules={false}
           isAnimated
           animateOnDataChange
@@ -79,7 +79,7 @@ export const WeightProgressChart = React.memo(
             pointerLabelComponent: (items: { value: number }[]) => (
               <View style={styles.tooltip}>
                 <Text style={styles.tooltipText}>
-                  {items[0]?.value} {weightUnit}
+                  {formatTooltip(items[0]?.value)}
                 </Text>
               </View>
             ),
@@ -92,7 +92,7 @@ export const WeightProgressChart = React.memo(
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,

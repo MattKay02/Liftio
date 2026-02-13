@@ -1,22 +1,21 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, Typography } from '@/constants';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import {
-  getMostFrequentExercise,
-  getHighestVolumeSet,
-  getHighestWeightLifted,
-  getPerformedExerciseNames,
-  getWeightOverTime,
-  ExerciseFrequency,
-  HighestVolumeSet,
-  HighestWeightSet,
-  WeightDataPoint,
+  getOverviewDuration,
+  getOverviewTotalVolume,
+  getOverviewTotalReps,
+  getOverviewTotalSets,
+  getTopExercisesByFrequency,
+  OverviewDataPoint,
+  ExerciseFrequencyRow,
 } from '@/lib/database/queries/exerciseStats';
-import { StatHighlightCards } from './StatHighlightCards';
-import { ExercisePicker } from './ExercisePicker';
-import { WeightProgressChart } from './WeightProgressChart';
+import { OverviewChart, OverviewMetric } from './OverviewChart';
+import { TopExercisesList } from './TopExercisesList';
+import { MoreExercisesDropdown } from './MoreExercisesDropdown';
+import { ExerciseDetailSlideUp } from './ExerciseDetailSlideUp';
 
 type TimeFilter = '30d' | '90d' | 'all';
 const FILTERS: { key: TimeFilter; label: string }[] = [
@@ -28,12 +27,12 @@ const FILTERS: { key: TimeFilter; label: string }[] = [
 export const ExerciseStatsSection = () => {
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-  const [mostFrequent, setMostFrequent] = useState<ExerciseFrequency | null>(null);
-  const [highestVolume, setHighestVolume] = useState<HighestVolumeSet | null>(null);
-  const [highestWeight, setHighestWeight] = useState<HighestWeightSet | null>(null);
-  const [exerciseNames, setExerciseNames] = useState<string[]>([]);
-  const [selectedExercise, setSelectedExercise] = useState('');
-  const [chartData, setChartData] = useState<WeightDataPoint[]>([]);
+  const [overviewMetric, setOverviewMetric] = useState<OverviewMetric>('duration');
+  const [overviewData, setOverviewData] = useState<OverviewDataPoint[]>([]);
+  const [exerciseFrequencies, setExerciseFrequencies] = useState<ExerciseFrequencyRow[]>([]);
+  const [expandedDropdown, setExpandedDropdown] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [showExerciseDetail, setShowExerciseDetail] = useState(false);
 
   const sinceTimestamp = useMemo(() => {
     if (timeFilter === 'all') return undefined;
@@ -41,27 +40,27 @@ export const ExerciseStatsSection = () => {
     return Date.now() - days * 24 * 60 * 60 * 1000;
   }, [timeFilter]);
 
-  const loadStats = useCallback(() => {
-    const freq = getMostFrequentExercise(sinceTimestamp);
-    setMostFrequent(freq);
-    setHighestVolume(getHighestVolumeSet(sinceTimestamp));
-    setHighestWeight(getHighestWeightLifted(sinceTimestamp));
-
-    const names = getPerformedExerciseNames(sinceTimestamp);
-    setExerciseNames(names);
-
-    const defaultExercise = freq?.exerciseName ?? names[0] ?? '';
-    setSelectedExercise((prev) => {
-      if (prev && names.includes(prev)) return prev;
-      return defaultExercise;
-    });
-
-    if (defaultExercise) {
-      setChartData(getWeightOverTime(defaultExercise, sinceTimestamp));
-    } else {
-      setChartData([]);
+  const loadOverviewData = useCallback((metric: OverviewMetric, since?: number) => {
+    switch (metric) {
+      case 'duration':
+        setOverviewData(getOverviewDuration(since));
+        break;
+      case 'volume':
+        setOverviewData(getOverviewTotalVolume(since));
+        break;
+      case 'reps':
+        setOverviewData(getOverviewTotalReps(since));
+        break;
+      case 'sets':
+        setOverviewData(getOverviewTotalSets(since));
+        break;
     }
-  }, [sinceTimestamp]);
+  }, []);
+
+  const loadStats = useCallback(() => {
+    loadOverviewData(overviewMetric, sinceTimestamp);
+    setExerciseFrequencies(getTopExercisesByFrequency(sinceTimestamp));
+  }, [sinceTimestamp, overviewMetric, loadOverviewData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,15 +68,20 @@ export const ExerciseStatsSection = () => {
     }, [loadStats])
   );
 
-  useEffect(() => {
-    if (selectedExercise) {
-      setChartData(getWeightOverTime(selectedExercise, sinceTimestamp));
-    } else {
-      setChartData([]);
-    }
-  }, [selectedExercise, sinceTimestamp]);
+  const handleMetricChange = useCallback((metric: OverviewMetric) => {
+    setOverviewMetric(metric);
+  }, []);
 
-  if (!mostFrequent && !highestVolume && !highestWeight) return null;
+  const handleExercisePress = useCallback((exerciseName: string) => {
+    setSelectedExercise(exerciseName);
+    setShowExerciseDetail(true);
+  }, []);
+
+  const top3 = exerciseFrequencies.slice(0, 3);
+  const rest = exerciseFrequencies.slice(3);
+  const hasData = exerciseFrequencies.length > 0 || overviewData.length > 0;
+
+  if (!hasData) return null;
 
   return (
     <View style={styles.section}>
@@ -98,20 +102,30 @@ export const ExerciseStatsSection = () => {
         </View>
       </View>
 
-      <StatHighlightCards
-        mostFrequent={mostFrequent}
-        highestVolume={highestVolume}
-        highestWeight={highestWeight}
+      <OverviewChart
+        metric={overviewMetric}
+        dataPoints={overviewData}
         weightUnit={weightUnit}
+        onMetricChange={handleMetricChange}
       />
 
-      <ExercisePicker
-        exerciseNames={exerciseNames}
-        selectedExercise={selectedExercise}
-        onSelectExercise={setSelectedExercise}
+      <TopExercisesList
+        exercises={top3}
+        onPressExercise={handleExercisePress}
       />
 
-      <WeightProgressChart dataPoints={chartData} weightUnit={weightUnit} />
+      <MoreExercisesDropdown
+        exercises={rest}
+        expanded={expandedDropdown}
+        onToggleExpand={() => setExpandedDropdown((prev) => !prev)}
+        onPressExercise={handleExercisePress}
+      />
+
+      <ExerciseDetailSlideUp
+        visible={showExerciseDetail}
+        exerciseName={selectedExercise}
+        onClose={() => setShowExerciseDetail(false)}
+      />
     </View>
   );
 };

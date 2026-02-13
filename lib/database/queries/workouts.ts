@@ -274,7 +274,7 @@ export const getPreviousSetsForExercise = (exerciseName: string): WorkoutSet[] =
     `SELECT s.* FROM sets s
      INNER JOIN exercises e ON s.exercise_id = e.id
      INNER JOIN workouts w ON e.workout_id = w.id
-     WHERE e.exercise_name = ?
+     WHERE e.exercise_name = ? AND w.is_template = 0
      ORDER BY w.date DESC, s.set_number ASC
      LIMIT 10`,
     [exerciseName]

@@ -14,7 +14,7 @@ import {
 import { X, Check } from 'lucide-react-native';
 import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { PREMADE_WORKOUTS, PremadeWorkout } from '@/constants/PremadeWorkouts';
-import { saveTemplate, getAddedPremadeIds } from '@/lib/database/queries/workouts';
+import { saveTemplate } from '@/lib/database/queries/workouts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -34,7 +34,7 @@ export const PremadeWorkoutsSlideUp = ({ visible, onClose, onWorkoutAdded }: Pre
 
   useEffect(() => {
     if (visible) {
-      setAddedIds(getAddedPremadeIds());
+      setAddedIds(new Set());
       Animated.spring(translateY, {
         toValue: 0,
         useNativeDriver: true,

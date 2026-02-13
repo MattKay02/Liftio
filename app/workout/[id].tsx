@@ -7,7 +7,7 @@ import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
 import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet, CardioMode, CARDIO_MODE_LABELS } from '@/types/workout';
 import { CardioModePicker } from '@/components/workout/CardioModePicker';
-import { getWorkoutById, deleteWorkout, updateWorkout } from '@/lib/database/queries/workouts';
+import { getWorkoutById, deleteWorkout, updateWorkout, getPreviousSetsForExercise } from '@/lib/database/queries/workouts';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { formatDate, formatDuration, getTotalWeight, formatWeight } from '@/lib/utils/date';
 import { secondsToTimeDisplay, sanitizeReps, sanitizeWeight, sanitizeDistance, sanitizeTimeInput, formatTimeDisplay, timeDigitsToSeconds, secondsToTimeDigits } from '@/lib/utils/validation';
@@ -21,6 +21,7 @@ import Animated, { SharedValue, FadeInDown } from 'react-native-reanimated';
 export default function WorkoutDetailScreen() {
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
   const [workout, setWorkout] = useState<WorkoutWithExercises | null>(null);
+  const [templateDisplay, setTemplateDisplay] = useState<WorkoutWithExercises | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editWorkout, setEditWorkout] = useState<WorkoutWithExercises | null>(null);
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
@@ -31,6 +32,28 @@ export default function WorkoutDetailScreen() {
     if (id) {
       const data = getWorkoutById(id);
       setWorkout(data);
+
+      if (data?.isTemplate) {
+        const enriched: WorkoutWithExercises = {
+          ...data,
+          exercises: data.exercises.map((exercise) => {
+            const prevSets = getPreviousSetsForExercise(exercise.exerciseName);
+            if (prevSets.length === 0) return exercise;
+            return {
+              ...exercise,
+              sets: exercise.sets.map((set, i) =>
+                i < prevSets.length
+                  ? { ...set, weight: prevSets[i].weight, reps: prevSets[i].reps, duration: prevSets[i].duration, distance: prevSets[i].distance }
+                  : set
+              ),
+            };
+          }),
+        };
+        setTemplateDisplay(enriched);
+      } else {
+        setTemplateDisplay(null);
+      }
+
       if (edit === 'true' && data) {
         enterEditMode(data);
       }
@@ -217,7 +240,7 @@ export default function WorkoutDetailScreen() {
     );
   }
 
-  const displayWorkout = isEditing && editWorkout ? editWorkout : workout;
+  const displayWorkout = isEditing && editWorkout ? editWorkout : (templateDisplay ?? workout);
 
   return (
     <SafeAreaView style={styles.safeArea}>
