@@ -259,6 +259,8 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
                 <Pressable onPress={() => Linking.openURL('https://creativecommons.org/licenses/by-sa/3.0/')}>
                   <Text style={styles.aboutLinkText}>creativecommons.org/licenses/by-sa/3.0</Text>
                 </Pressable>
+                <View style={styles.aboutDivider} />
+                <Text style={styles.aboutBodyText}>Modified: Optimized for mobile display</Text>
               </View>
             </Animated.View>
           </>
