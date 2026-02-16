@@ -3,7 +3,9 @@
     "allow": [
       "Bash(cd /c/Users/matty/OneDrive/Client Projects pull location/Liftio)",
       "Bash(npx tsc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(node scripts/process-exercise-images.js:*)"
     ]
   }
 }

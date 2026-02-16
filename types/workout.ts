@@ -44,11 +44,12 @@ export interface WorkoutSet {
 export interface ExerciseLibraryItem {
   id: string;
   name: string;
-  category: 'Barbell' | 'Dumbbell' | 'Machine' | 'Bodyweight' | 'Cable' | 'Other';
+  category: 'Barbell' | 'Dumbbell' | 'Machine' | 'Bodyweight' | 'Cable' | 'EZ Bar' | 'Trap Bar' | 'Kettlebell' | 'Cardio' | 'Other';
   muscleGroup: string | null;
   equipment: string | null;
   isCustom: boolean;
   createdAt: number;
+  imageKey: string | null;
 }
 
 export interface UserSettings {

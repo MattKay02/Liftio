@@ -7,6 +7,7 @@ import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { useTemplateStore } from '@/lib/stores/templateStore';
 import { getAllExercises, getMuscleGroups, getCategories, addCustomExercise, exerciseNameExists } from '@/lib/database/queries/exerciseLibrary';
 import { ExerciseLibraryItem } from '@/types/workout';
+import { ExerciseImage } from '@/components/shared/ExerciseImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_EXERCISES_PER_WORKOUT, MAX_EXERCISE_NAME_LENGTH, validateExerciseName } from '@/lib/utils/validation';
 import { setPendingExercise } from '@/lib/utils/pendingExercise';
@@ -142,10 +143,13 @@ export default function AddExerciseScreen() {
 
   const renderExercise = ({ item }: { item: ExerciseLibraryItem }) => (
     <Pressable style={styles.exerciseRow} onPress={() => handleSelect(item)}>
-      <Text style={styles.exerciseName}>{item.name}</Text>
-      <Text style={styles.exerciseMeta}>
-        {item.muscleGroup} {'\u00B7'} {item.category}
-      </Text>
+      <ExerciseImage imageKey={item.imageKey} size={40} style={styles.exerciseThumb} />
+      <View style={styles.exerciseInfo}>
+        <Text style={styles.exerciseName}>{item.name}</Text>
+        <Text style={styles.exerciseMeta}>
+          {item.muscleGroup} {'\u00B7'} {item.category}
+        </Text>
+      </View>
     </Pressable>
   );
 
@@ -439,9 +443,18 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
     paddingVertical: Spacing.sm + 4,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+  },
+  exerciseThumb: {
+    borderRadius: 6,
+  },
+  exerciseInfo: {
+    flex: 1,
   },
   exerciseName: {
     fontSize: Typography.fontSize.body,

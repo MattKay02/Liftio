@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { generateUUID } from '@/lib/utils/uuid';
+import { IMAGE_EXERCISES } from './imageSeedData';
 
 const DB_NAME = 'liftio.db';
 
@@ -134,8 +135,18 @@ export const initializeDatabase = async () => {
     // Column already exists
   }
 
+  // Add image_key column to exercise_library
+  try {
+    await db.execAsync('ALTER TABLE exercise_library ADD COLUMN image_key TEXT DEFAULT NULL');
+  } catch (e) {
+    // Column already exists
+  }
+
   // Seed exercise library (inserts any missing exercises)
   await seedExerciseLibrary(db);
+
+  // Backfill image_key on the original 81 exercises (idempotent)
+  updateExerciseImageKeys(db);
 
   // Initialize settings if not exists
   const settings = db.getFirstSync('SELECT * FROM user_settings WHERE id = 1');
@@ -149,7 +160,7 @@ export const initializeDatabase = async () => {
 };
 
 const seedExerciseLibrary = async (db: SQLite.SQLiteDatabase) => {
-  const exercises = [// BARBELL - Core Compounds
+  const exercises: { name: string; category: string; muscleGroup: string; equipment: string; imageKey?: string | null }[] = [// BARBELL - Core Compounds
     { name: 'Barbell Back Squat', category: 'Barbell', muscleGroup: 'Legs', equipment: 'Barbell' },
     { name: 'Barbell Bench Press', category: 'Barbell', muscleGroup: 'Chest', equipment: 'Barbell' },
     { name: 'Barbell Deadlift', category: 'Barbell', muscleGroup: 'Back', equipment: 'Barbell' },
@@ -278,13 +289,90 @@ const seedExerciseLibrary = async (db: SQLite.SQLiteDatabase) => {
     { name: 'Sled Push', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Sled' },
     { name: 'Sled Pull', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Sled' },
     { name: 'Farmers Walk', category: 'Cardio', muscleGroup: 'Cardio', equipment: 'Dumbbells' },
+
+    // IMAGE LIBRARY EXERCISES (252 exercises with images)
+    ...IMAGE_EXERCISES,
   ];
 
   const now = Date.now();
   for (const exercise of exercises) {
     db.runSync(
-      'INSERT OR IGNORE INTO exercise_library (id, name, category, muscle_group, equipment, is_custom, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)',
-      [generateUUID(), exercise.name, exercise.category, exercise.muscleGroup, exercise.equipment, now]
+      'INSERT OR IGNORE INTO exercise_library (id, name, category, muscle_group, equipment, image_key, is_custom, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)',
+      [generateUUID(), exercise.name, exercise.category, exercise.muscleGroup, exercise.equipment, exercise.imageKey ?? null, now]
+    );
+  }
+};
+
+const updateExerciseImageKeys = (db: SQLite.SQLiteDatabase) => {
+  const updates: [string, string][] = [
+    ['Barbell Back Squat',              'barbell-squat'],
+    ['Barbell Bench Press',             'bench-press'],
+    ['Barbell Deadlift',                'barbell-dead-lifts'],
+    ['Barbell Overhead Press',          'barbell-shoulder-press'],
+    ['Barbell Row',                     'rear-deltoid-row-barbell'],
+    ['Barbell Front Squat',             'front-squat-with-barbell'],
+    ['Barbell Romanian Deadlift',       'romanian-dead-lift'],
+    ['Barbell Hip Thrust',              'bridging'],
+    ['Barbell Incline Bench Press',     'incline-bench-press'],
+    ['Barbell Curl',                    'bicep-curls-with-barbell'],
+    ['Barbell Close-Grip Bench Press',  'close-grip-barbell-bench-press'],
+    ['Barbell Good Morning',            'barbell-good-mornings'],
+    ['Barbell Shrug',                   'barbell-shrugs'],
+    ['Dumbbell Bench Press',            'bench-press-dumbbell'],
+    ['Dumbbell Shoulder Press',         'dumbbell-shoulder-press'],
+    ['Dumbbell Row',                    'rear-deltoid-row-dumbbell'],
+    ['Dumbbell Bicep Curl',             'biceps-curl-with-dumbbell'],
+    ['Dumbbell Tricep Extension',       'lying-triceps-extension-with-dumbbells'],
+    ['Dumbbell Lateral Raise',          'lateral-dumbbell-raises'],
+    ['Dumbbell Goblet Squat',           'pile-squat-with-dumbbell'],
+    ['Dumbbell Lunge',                  'dumbbell-lunges'],
+    ['Dumbbell Incline Bench Press',    'dumbbell-incline-bench-press'],
+    ['Dumbbell Chest Fly',              'dumbbell-flys'],
+    ['Dumbbell Front Raise',            'front-dumbbell-raise'],
+    ['Dumbbell Rear Delt Fly',          'lying-rear-lateral-raise'],
+    ['Dumbbell Hammer Curl',            'bicep-hammer-curl-with-dumbbell'],
+    ['Dumbbell Shrug',                  'shoulder-shrugs'],
+    ['Dumbbell Romanian Deadlift',      'dumbbell-dead-lifts'],
+    ['Dumbbell Skull Crusher',          'lying-triceps-extension-with-dumbbells'],
+    ['Leg Press',                       'leg-press'],
+    ['Leg Curl',                        'lying-leg-curl-machine'],
+    ['Leg Extension',                   'leg-extensions'],
+    ['Lat Pulldown',                    'wide-grip-lat-pull-down'],
+    ['Cable Row',                       'seated-cable-rows'],
+    ['Chest Press Machine',             'machine-bench-press'],
+    ['Smith Machine Squat',             'smith-machine-squats'],
+    ['Smith Machine Bench Press',       'smith-machine-bench-press'],
+    ['Hack Squat',                      'hack-squat-machine'],
+    ['Calf Raise Machine',              'standing-calf-raises-using-machine'],
+    ['Pec Deck Fly',                    'butterfly-machine'],
+    ['Shoulder Press Machine',          'seated-shoulder-press-machine'],
+    ['Hip Abductor Machine',            'thigh-abductor'],
+    ['Hip Adductor Machine',            'thigh-adductor'],
+    ['Preacher Curl Machine',           'preacher-curl-with-machine'],
+    ['Pull-up',                         'pull-ups'],
+    ['Push-up',                         'push-ups'],
+    ['Dip',                             'tricep-dips'],
+    ['Chin-up',                         'chin-ups'],
+    ['Plank',                           'side-plank'],
+    ['Sit-up',                          'crunches'],
+    ['Lunge',                           'walking-lunges'],
+    ['Glute Bridge',                    'bridging'],
+    ['Hanging Leg Raise',               'flat-bench-leg-raises'],
+    ['Cable Fly',                       'cable-crossover'],
+    ['Cable Tricep Pushdown',           'triceps-pushdown-with-cable'],
+    ['Cable Bicep Curl',                'standing-biceps-curl-with-cable'],
+    ['Cable Rope Hammer Curl',          'hammer-curls-with-rope-and-cable'],
+    ['Cable Crunch',                    'seated-ab-crunch-with-cable'],
+    ['Cable Overhead Tricep Extension', 'kneeling-triceps-extension-with-cable'],
+    ['Cable Upright Row',               'upright-cable-row'],
+    ['EZ Bar Curl',                     'ez-bar-curl-with-barbell'],
+    ['EZ Bar Skull Crusher',            'decline-ez-bar-triceps-extension-with-barbell'],
+    ['EZ Bar Preacher Curl',            'close-grip-ez-bar-curl-with-barbell'],
+  ];
+  for (const [name, imageKey] of updates) {
+    db.runSync(
+      'UPDATE exercise_library SET image_key = ? WHERE name = ? AND image_key IS NULL',
+      [imageKey, name]
     );
   }
 };

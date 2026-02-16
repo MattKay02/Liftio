@@ -1,7 +1,7 @@
 import { View, Text, TextInput, StyleSheet, Alert, Pressable } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +11,8 @@ import { getWorkoutById, deleteWorkout, updateWorkout, getPreviousSetsForExercis
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { formatDate, formatDuration, getTotalWeight, formatWeight } from '@/lib/utils/date';
 import { secondsToTimeDisplay, sanitizeReps, sanitizeWeight, sanitizeDistance, sanitizeTimeInput, formatTimeDisplay, timeDigitsToSeconds, secondsToTimeDigits } from '@/lib/utils/validation';
-import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
+import { isCardioExercise, getExerciseImageKeyByName } from '@/lib/database/queries/exerciseLibrary';
+import { ExerciseImage } from '@/components/shared/ExerciseImage';
 import { generateUUID } from '@/lib/utils/uuid';
 import { consumePendingExercise } from '@/lib/utils/pendingExercise';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -230,6 +231,15 @@ export default function WorkoutDetailScreen() {
     });
   };
 
+  const displayWorkout = isEditing && editWorkout ? editWorkout : (templateDisplay ?? workout);
+
+  const exerciseImageKeys = useMemo(
+    () => Object.fromEntries(
+      (displayWorkout?.exercises ?? []).map((e) => [e.id, getExerciseImageKeyByName(e.exerciseName)])
+    ),
+    [displayWorkout?.exercises]
+  );
+
   if (!workout) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -239,8 +249,6 @@ export default function WorkoutDetailScreen() {
       </SafeAreaView>
     );
   }
-
-  const displayWorkout = isEditing && editWorkout ? editWorkout : (templateDisplay ?? workout);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -289,6 +297,7 @@ export default function WorkoutDetailScreen() {
           )}
 
           {displayWorkout.exercises.map((exercise, exerciseIndex) => {
+            const imageKey = exerciseImageKeys[exercise.id];
             const isCardio = exercise.cardioMode !== null || isCardioExercise(exercise.exerciseName);
             const cardioMode: CardioMode = exercise.cardioMode ?? 'time';
 
@@ -317,6 +326,13 @@ export default function WorkoutDetailScreen() {
                     </Pressable>
                   )}
                 </View>
+
+                {imageKey && (
+                  <View style={styles.exerciseImages}>
+                    <ExerciseImage imageKey={imageKey} variant="start" size={80} style={styles.exerciseImageThumb} />
+                    <ExerciseImage imageKey={imageKey} variant="end" size={80} style={styles.exerciseImageThumb} />
+                  </View>
+                )}
 
                 {/* Edit Units button in edit mode for cardio exercises */}
                 {isEditing && isCardio && (
@@ -628,6 +644,14 @@ const styles = StyleSheet.create({
   },
   exerciseSection: {
     marginBottom: Spacing.lg,
+  },
+  exerciseImages: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  exerciseImageThumb: {
+    borderRadius: 8,
   },
   exerciseHeader: {
     flexDirection: 'row',

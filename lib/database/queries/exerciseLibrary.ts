@@ -10,6 +10,7 @@ interface ExerciseLibraryRow {
   equipment: string | null;
   is_custom: number;
   created_at: number;
+  image_key: string | null;
 }
 
 export const getAllExercises = (): ExerciseLibraryItem[] => {
@@ -86,6 +87,7 @@ export const addCustomExercise = (
     equipment: null,
     isCustom: true,
     createdAt: now,
+    imageKey: null,
   };
 };
 
@@ -106,4 +108,14 @@ const mapExercise = (row: ExerciseLibraryRow): ExerciseLibraryItem => ({
   equipment: row.equipment,
   isCustom: row.is_custom === 1,
   createdAt: row.created_at,
+  imageKey: row.image_key ?? null,
 });
+
+export const getExerciseImageKeyByName = (name: string): string | null => {
+  const db = getDb();
+  const row = db.getFirstSync<{ image_key: string | null }>(
+    'SELECT image_key FROM exercise_library WHERE name = ?',
+    [name]
+  );
+  return row?.image_key ?? null;
+};

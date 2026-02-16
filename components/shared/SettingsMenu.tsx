@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Modal, Pressable, ScrollView, Alert, ActivityIndicator, Linking, Animated } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
@@ -21,6 +21,26 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
   const distanceUnit = settings.distanceUnit;
   const defaultRestTimer = settings.defaultRestTimer;
   const [isExporting, setIsExporting] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const aboutTranslateY = useRef(new Animated.Value(400)).current;
+
+  const openAbout = () => {
+    setShowAbout(true);
+    Animated.spring(aboutTranslateY, {
+      toValue: 0,
+      useNativeDriver: true,
+      damping: 25,
+      stiffness: 200,
+    }).start();
+  };
+
+  const closeAbout = () => {
+    Animated.timing(aboutTranslateY, {
+      toValue: 400,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowAbout(false));
+  };
 
   const restTimerOptions = [60, 90, 120, 180];
 
@@ -186,6 +206,16 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
               </View>
             </View>
 
+            {/* About */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <View style={styles.optionGroup}>
+                <Pressable style={styles.optionButton} onPress={openAbout}>
+                  <Text style={styles.optionText}>About Liftio</Text>
+                </Pressable>
+              </View>
+            </View>
+
             {/* Version */}
             <View style={styles.section}>
               <Text style={styles.versionLabel}>Version 1.0.0</Text>
@@ -201,6 +231,38 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
             />
           </View>
         </View>
+
+        {/* About slide-up panel */}
+        {showAbout && (
+          <>
+            <Pressable style={styles.aboutBackdrop} onPress={closeAbout} />
+            <Animated.View
+              style={[styles.aboutPanel, { transform: [{ translateY: aboutTranslateY }] }]}
+            >
+              <View style={styles.aboutHandleContainer}>
+                <View style={styles.aboutHandle} />
+              </View>
+              <View style={styles.aboutPanelHeader}>
+                <Text style={styles.aboutPanelTitle}>About</Text>
+                <Pressable onPress={closeAbout} hitSlop={8}>
+                  <X size={22} color={Colors.textSecondary} />
+                </Pressable>
+              </View>
+              <View style={styles.aboutPanelContent}>
+                <Text style={styles.aboutSectionLabel}>Exercise Illustrations</Text>
+                <Text style={styles.aboutBodyText}>Images © Everkinetic</Text>
+                <Pressable onPress={() => Linking.openURL('https://github.com/everkinetic/data')}>
+                  <Text style={styles.aboutLinkText}>github.com/everkinetic/data</Text>
+                </Pressable>
+                <View style={styles.aboutDivider} />
+                <Text style={styles.aboutBodyText}>Licensed under CC BY-SA 3.0</Text>
+                <Pressable onPress={() => Linking.openURL('https://creativecommons.org/licenses/by-sa/3.0/')}>
+                  <Text style={styles.aboutLinkText}>creativecommons.org/licenses/by-sa/3.0</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          </>
+        )}
       </Pressable>
     </Modal>
   );
@@ -313,6 +375,68 @@ const styles = StyleSheet.create({
   },
   timerButtonTextActive: {
     color: Colors.textPrimary,
+  },
+  aboutBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  aboutPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.bgCard,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    ...Shadows.elevated,
+  },
+  aboutHandleContainer: {
+    alignItems: 'center',
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  aboutHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textTertiary,
+  },
+  aboutPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  aboutPanelTitle: {
+    fontSize: Typography.fontSize.title,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  aboutPanelContent: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  aboutSectionLabel: {
+    fontSize: Typography.fontSize.body,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  aboutBodyText: {
+    fontSize: Typography.fontSize.body,
+    color: Colors.textSecondary,
+  },
+  aboutLinkText: {
+    fontSize: Typography.fontSize.body,
+    color: Colors.textSecondary,
+    textDecorationLine: 'underline',
+  },
+  aboutDivider: {
+    height: Spacing.sm,
   },
   versionLabel: {
     fontSize: Typography.fontSize.caption,

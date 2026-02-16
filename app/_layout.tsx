@@ -7,32 +7,43 @@ import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Colors } from '@/constants';
 import { FloatingWorkoutTimer } from '@/components/shared/FloatingWorkoutTimer';
 import { KeyboardDismissButton } from '@/components/shared/KeyboardDismissButton';
+import { LoadingScreen } from '@/components/shared/LoadingScreen';
 
 export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [dbReady, setDbReady] = useState(false);
+  const [appReady, setAppReady] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
 
   useEffect(() => {
     const init = async () => {
+      const minDelay = new Promise((resolve) => setTimeout(resolve, 2000));
+      let dbDone = false;
       try {
         await initializeDatabase();
         loadSettings();
       } catch (e) {
         console.error('Database init failed:', e);
       } finally {
-        setDbReady(true);
+        dbDone = true;
         SplashScreen.hideAsync();
       }
+      await minDelay;
+      setAppReady(true);
     };
     init();
   }, []);
 
-  if (!dbReady) {
-    return null;
+  if (showLoading) {
+    return (
+      <LoadingScreen
+        isReady={appReady}
+        onFinish={() => setShowLoading(false)}
+      />
+    );
   }
 
   return (

@@ -8,7 +8,8 @@ import { useWorkoutStore } from '@/lib/stores/workoutStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Colors, Spacing, Typography, Shadows } from '@/constants';
 import { MAX_SETS_PER_EXERCISE } from '@/lib/utils/validation';
-import { isCardioExercise } from '@/lib/database/queries/exerciseLibrary';
+import { isCardioExercise, getExerciseImageKeyByName } from '@/lib/database/queries/exerciseLibrary';
+import { ExerciseImage } from '@/components/shared/ExerciseImage';
 
 interface ExerciseCardProps {
   exercise: ExerciseWithSets;
@@ -21,6 +22,7 @@ export const ExerciseCard = ({ exercise, readonly = false, onLongPress, isBeingD
   const { removeExercise, addSet, updateCardioMode } = useWorkoutStore();
   const distanceUnit = useSettingsStore((s) => s.settings.distanceUnit);
   const isCardio = useMemo(() => isCardioExercise(exercise.exerciseName), [exercise.exerciseName]);
+  const imageKey = useMemo(() => getExerciseImageKeyByName(exercise.exerciseName), [exercise.exerciseName]);
   const [pickerVisible, setPickerVisible] = useState(false);
 
   // For cardio exercises, default to 'time' if cardioMode is null (backward compat)
@@ -46,6 +48,7 @@ export const ExerciseCard = ({ exercise, readonly = false, onLongPress, isBeingD
       style={[styles.card, isBeingDragged && styles.cardDragging]}
     >
       <View style={styles.header}>
+        <ExerciseImage imageKey={imageKey} size={48} style={styles.exerciseThumb} />
         <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
         {!readonly && (
           <Pressable
@@ -154,6 +157,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.sm,
+  },
+  exerciseThumb: {
+    borderRadius: 6,
+    marginRight: Spacing.sm,
   },
   exerciseName: {
     fontSize: Typography.fontSize.title,
