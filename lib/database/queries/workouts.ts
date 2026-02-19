@@ -115,7 +115,7 @@ export const getRecentTemplates = (limit: number = 5): WorkoutWithExercises[] =>
   const db = getDb();
 
   const workoutRows = db.getAllSync<WorkoutRow>(
-    'SELECT * FROM workouts ORDER BY date DESC LIMIT ?',
+    'SELECT * FROM workouts WHERE is_template = 1 ORDER BY date DESC LIMIT ?',
     [limit]
   );
 

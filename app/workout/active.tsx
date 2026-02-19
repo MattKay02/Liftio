@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
@@ -74,6 +74,19 @@ export default function ActiveWorkoutScreen() {
       }
     };
   }, [workoutStartTime]);
+
+  const hasBeenActiveRef = useRef(false);
+  useEffect(() => {
+    if (isWorkoutActive) hasBeenActiveRef.current = true;
+  }, [isWorkoutActive]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isWorkoutActive && hasBeenActiveRef.current) {
+        router.back();
+      }
+    }, [isWorkoutActive])
+  );
 
   const handleCancel = () => {
     Alert.alert('Cancel Workout?', 'Are you sure you want to cancel this workout?', [

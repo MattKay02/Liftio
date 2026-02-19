@@ -1,7 +1,7 @@
 import { View, Text, TextInput, StyleSheet, Alert, Pressable } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
@@ -231,15 +231,6 @@ export default function WorkoutDetailScreen() {
     });
   };
 
-  const displayWorkout = isEditing && editWorkout ? editWorkout : (templateDisplay ?? workout);
-
-  const exerciseImageKeys = useMemo(
-    () => Object.fromEntries(
-      (displayWorkout?.exercises ?? []).map((e) => [e.id, getExerciseImageKeyByName(e.exerciseName)])
-    ),
-    [displayWorkout?.exercises]
-  );
-
   if (!workout) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -249,6 +240,12 @@ export default function WorkoutDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  const displayWorkout = (isEditing && editWorkout ? editWorkout : (templateDisplay ?? workout))!;
+
+  const exerciseImageKeys = Object.fromEntries(
+    displayWorkout.exercises.map((e) => [e.id, getExerciseImageKeyByName(e.exerciseName)])
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -408,8 +405,8 @@ export default function WorkoutDetailScreen() {
                           </>
                         ) : (
                           <>
-                            <Text style={[styles.setText, styles.weightCol]}>{set.weight}</Text>
-                            <Text style={[styles.setText, styles.repsCol]}>{set.reps}</Text>
+                            <Text style={[styles.setText, styles.weightCol]}>{set.weight > 0 ? set.weight : '-'}</Text>
+                            <Text style={[styles.setText, styles.repsCol]}>{set.reps > 0 ? set.reps : '-'}</Text>
                           </>
                         )}
                       </View>

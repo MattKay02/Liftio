@@ -57,10 +57,15 @@ export default function CreateTemplateScreen() {
       return;
     }
 
-    saveTemplate(
-      name.trim(),
-      exercises.map((e) => e.name)
-    );
+    try {
+      saveTemplate(
+        name.trim(),
+        exercises.map((e) => e.name)
+      );
+    } catch (e) {
+      Alert.alert('Save Failed', 'Your workout could not be saved. Please try again.');
+      return;
+    }
 
     reset();
     router.back();

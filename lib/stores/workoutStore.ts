@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { WorkoutWithExercises, ExerciseWithSets, WorkoutSet, CardioMode } from '@/types/workout';
 import { generateUUID } from '@/lib/utils/uuid';
@@ -136,7 +137,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     };
 
     // Save to database
-    saveWorkout(finalWorkout);
+    try {
+      saveWorkout(finalWorkout);
+    } catch (e) {
+      console.error('Failed to save workout:', e);
+      Alert.alert('Save Failed', 'Your workout could not be saved. Please try again.');
+      return;
+    }
 
     set({
       activeWorkout: null,

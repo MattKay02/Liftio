@@ -40,7 +40,7 @@ export default function AddExerciseScreen() {
         .filter((e) => e.muscleGroup === selectedMuscleGroup)
         .map((e) => e.category)
     );
-    return allCategories.filter((c) => cats.has(c));
+    return allCategories.filter((c) => cats.has(c as never));
   }, [allExercises, allCategories, selectedMuscleGroup]);
 
   const filteredExercises = useMemo(() => {
@@ -102,7 +102,7 @@ export default function AddExerciseScreen() {
         const cats = new Set(
           allExercises.filter((e) => e.muscleGroup === mg).map((e) => e.category)
         );
-        if (!cats.has(selectedCategory)) {
+        if (!cats.has(selectedCategory as never)) {
           setSelectedCategory(null);
         }
       }

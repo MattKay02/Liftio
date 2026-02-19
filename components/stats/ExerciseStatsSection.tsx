@@ -86,7 +86,7 @@ export const ExerciseStatsSection = () => {
   return (
     <View style={styles.section}>
       <View style={styles.header}>
-        <Text style={styles.sectionLabel}>Exercise Stats</Text>
+        <Text style={styles.sectionLabel}>Workout Stats</Text>
         <View style={styles.filterRow}>
           {FILTERS.map(({ key, label }) => (
             <Pressable

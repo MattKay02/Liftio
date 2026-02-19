@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Colors, Typography, Spacing } from '@/constants';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -14,12 +14,16 @@ export default function FinishWorkoutScreen() {
   const [notes, setNotes] = useState('');
   const { activeWorkout, workoutStartTime, finishWorkout } = useWorkoutStore();
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
+  // Must be before the early return — hooks cannot be called after a conditional return
+  const elapsedRef = useRef(
+    workoutStartTime ? Math.floor((Date.now() - workoutStartTime) / 1000) : 0
+  );
 
   if (!activeWorkout || !workoutStartTime) {
     return null;
   }
 
-  const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+  const elapsed = elapsedRef.current;
   const totalSets = activeWorkout.exercises.reduce(
     (sum, e) => sum + e.sets.filter((s) => s.isCompleted).length,
     0
@@ -27,7 +31,8 @@ export default function FinishWorkoutScreen() {
 
   const handleFinish = () => {
     finishWorkout(notes);
-    router.dismissAll();
+    // Dismiss this modal — active.tsx will detect !isWorkoutActive on focus and pop to tabs
+    router.dismiss();
   };
 
   return (
@@ -88,9 +93,9 @@ export default function FinishWorkoutScreen() {
           />
 
           <Button
-            title="Discard"
+            title="Back"
             onPress={() => router.back()}
-            variant="destructive"
+            variant="text"
           />
         </View>
       </View>

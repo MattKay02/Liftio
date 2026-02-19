@@ -35,7 +35,7 @@ export const ExerciseImage = ({
     <Image
       source={source}
       style={[{ width: w, height: h }, style]}
-      resizeMode="contain"
+      resizeMode="cover"
     />
   );
 };
