@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/Button';
 import { exportWorkoutData } from '@/lib/utils/csvExportImport';
+import { seedDemoData, countExistingWorkouts } from '@/lib/database/seedDemoData';
 
 interface SettingsMenuProps {
   visible: boolean;
@@ -21,6 +22,7 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
   const distanceUnit = settings.distanceUnit;
   const defaultRestTimer = settings.defaultRestTimer;
   const [isExporting, setIsExporting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const aboutTranslateY = useRef(new Animated.Value(400)).current;
 
@@ -43,6 +45,42 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
   };
 
   const restTimerOptions = [60, 90, 120, 180];
+
+  const handleLoadDemoData = () => {
+    const existingCount = countExistingWorkouts();
+
+    const runSeed = async (clearExisting: boolean) => {
+      setIsSeeding(true);
+      try {
+        const { workoutsInserted } = await seedDemoData(clearExisting);
+        Alert.alert('Demo Data Loaded', `${workoutsInserted} workouts inserted across 3 months.`);
+      } catch (e: any) {
+        Alert.alert('Error', e.message || 'Something went wrong.');
+      } finally {
+        setIsSeeding(false);
+      }
+    };
+
+    if (existingCount > 5) {
+      Alert.alert(
+        'Replace Existing Data?',
+        `You have ${existingCount} existing workouts. Loading demo data will delete them all. Continue?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Replace', style: 'destructive', onPress: () => runSeed(true) },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Load Demo Data',
+        'Insert ~90 days of demo workout history to explore the app?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Load', onPress: () => runSeed(false) },
+        ]
+      );
+    }
+  };
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -202,6 +240,14 @@ export const SettingsMenu = ({ visible, onClose }: SettingsMenuProps) => {
                 >
                   <Text style={styles.optionText}>Export Data</Text>
                   {isExporting && <ActivityIndicator size="small" color={Colors.textSecondary} />}
+                </Pressable>
+                <Pressable
+                  style={styles.optionButton}
+                  onPress={handleLoadDemoData}
+                  disabled={isSeeding}
+                >
+                  <Text style={[styles.optionText, { color: Colors.red600 }]}>Load Demo Data</Text>
+                  {isSeeding && <ActivityIndicator size="small" color={Colors.textSecondary} />}
                 </Pressable>
               </View>
             </View>

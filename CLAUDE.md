@@ -9,13 +9,17 @@ Minimalist gym tracking app built with React Native + Expo. Core philosophy: spe
 ## Tech Stack
 
 ```
-React Native 0.81+ / Expo SDK 54+ / TypeScript (strict)
-Routing: Expo Router (file-based)
-State: Zustand
-Database: Expo SQLite (see DATABASE.md for schema and queries)
-Gestures: react-native-gesture-handler + react-native-reanimated
-UI: Custom components (no UI library)
-Icons: Lucide React Native (minimal use)
+React 19 / React Native 0.81 / Expo SDK 54 / TypeScript 5.9 (strict)
+Routing:    Expo Router 6 (file-based, Next.js-style)
+State:      Zustand 5
+Database:   Expo SQLite 16 — local-first, fully offline (see DATABASE.md)
+Gestures:   react-native-gesture-handler 2.28 + react-native-reanimated 4.1
+            react-native-worklets 0.5 (JS worklets engine for reanimated)
+Charts:     react-native-gifted-charts 1.4 + react-native-svg 15
+UI:         Custom components; expo-linear-gradient for gradient surfaces
+Lists:      react-native-draggable-flatlist (drag-to-reorder)
+Icons:      Lucide React Native + @expo/vector-icons
+Utilities:  expo-crypto (UUID), expo-file-system, expo-document-picker, expo-sharing
 ```
 
 ## Project Structure
