@@ -12,7 +12,7 @@ interface StatsLineChartProps {
 }
 
 export const StatsLineChart = React.memo(
-  ({ dataPoints, yAxisSuffix = '', tooltipFormatter }: StatsLineChartProps) => {
+  ({ dataPoints, yAxisSuffix = '' }: StatsLineChartProps) => {
     const { width: screenWidth } = useWindowDimensions();
     const chartWidth = screenWidth - Spacing.md * 2 - Spacing.md * 2 - 40;
 
@@ -28,20 +28,37 @@ export const StatsLineChart = React.memo(
       );
     }
 
-    const labelInterval = Math.max(1, Math.ceil(dataPoints.length / 6));
+    // Evenly sample down to max 9 display points
+    const MAX_DISPLAY_POINTS = 9;
+    const displayData = dataPoints.length <= MAX_DISPLAY_POINTS
+      ? dataPoints
+      : Array.from({ length: MAX_DISPLAY_POINTS }, (_, i) => {
+          const idx = Math.round(i * (dataPoints.length - 1) / (MAX_DISPLAY_POINTS - 1));
+          return dataPoints[idx];
+        });
 
-    const chartData = dataPoints.map((dp, i) => ({
+    // Up to 5 evenly-spaced x-axis label indices.
+    // Math.floor for all interior positions so any remainder gap falls at the end.
+    const labelCount = Math.min(5, displayData.length);
+    const lastIdx = displayData.length - 1;
+    const labelledIndices = new Set(
+      Array.from({ length: labelCount }, (_, i) => {
+        if (i === labelCount - 1) return lastIdx;
+        return Math.floor(i * lastIdx / (labelCount - 1));
+      })
+    );
+
+    const chartData = displayData.map((dp, i) => ({
       value: dp.value,
-      label: i % labelInterval === 0 ? formatChartDate(dp.date) : '',
+      label: labelledIndices.has(i) ? formatChartDate(dp.date) : '',
       labelTextStyle: { color: Colors.textTertiary, fontSize: 9 },
     }));
 
-    const spacing = Math.max(
-      30,
-      Math.min(60, chartWidth / Math.max(dataPoints.length - 1, 1))
-    );
+    const EDGE_PADDING = 20;
+    const spacing = (chartWidth - EDGE_PADDING * 2) / Math.max(displayData.length - 1, 1);
 
-    const formatTooltip = tooltipFormatter ?? ((v: number) => `${v}${yAxisSuffix}`);
+    const average = displayData.reduce((sum, dp) => sum + dp.value, 0) / displayData.length;
+    const avgLabel = `avg ${Math.round(average)}${yAxisSuffix}`;
 
     return (
       <View style={styles.container}>
@@ -50,8 +67,8 @@ export const StatsLineChart = React.memo(
           height={180}
           width={chartWidth}
           spacing={spacing}
-          initialSpacing={16}
-          endSpacing={16}
+          initialSpacing={EDGE_PADDING}
+          endSpacing={EDGE_PADDING}
           color={Colors.accent}
           thickness={2}
           dataPointsColor={Colors.accent}
@@ -62,27 +79,22 @@ export const StatsLineChart = React.memo(
           xAxisColor={Colors.border}
           yAxisTextStyle={{ color: Colors.textTertiary, fontSize: 10 }}
           xAxisLabelTextStyle={{ color: Colors.textTertiary, fontSize: 9 }}
-          rulesType="dashed"
-          rulesColor={Colors.bgElevated}
           yAxisLabelSuffix={yAxisSuffix}
-          hideRules={false}
+          disableScroll
+          hideRules
           isAnimated
           animateOnDataChange
           onDataChangeAnimationDuration={300}
-          pointerConfig={{
-            pointerStripColor: Colors.textTertiary,
-            pointerStripWidth: 1,
-            pointerColor: Colors.accent,
-            radius: 6,
-            pointerLabelWidth: 100,
-            pointerLabelHeight: 40,
-            pointerLabelComponent: (items: { value: number }[]) => (
-              <View style={styles.tooltip}>
-                <Text style={styles.tooltipText}>
-                  {formatTooltip(items[0]?.value)}
-                </Text>
-              </View>
-            ),
+          showReferenceLine1
+          referenceLine1Position={average}
+          referenceLine1Config={{
+            color: Colors.highlight,
+            thickness: 1,
+            type: 'dashed',
+            dashWidth: 6,
+            dashGap: 4,
+            labelText: avgLabel,
+            labelTextStyle: { color: Colors.highlight, fontSize: 9 },
           }}
         />
       </View>
@@ -109,18 +121,5 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.body,
     color: Colors.textTertiary,
     textAlign: 'center',
-  },
-  tooltip: {
-    backgroundColor: Colors.bgElevated,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tooltipText: {
-    fontSize: Typography.fontSize.caption,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.semibold,
   },
 });

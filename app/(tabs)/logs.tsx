@@ -16,6 +16,7 @@ import { getTimeSinceString, formatDuration, formatTimeOfDay, getTotalWeight, fo
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { Pencil, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { ExerciseStatsSection } from '@/components/stats/ExerciseStatsSection';
+import { YearActivityGrid } from '@/components/shared/YearActivityGrid';
 
 export default function LogsScreen() {
   const weightUnit = useSettingsStore((s) => s.settings.weightUnit);
@@ -76,6 +77,8 @@ export default function LogsScreen() {
         contentContainerStyle={styles.content}
         decelerationRate="fast"
       >
+        <YearActivityGrid workouts={workouts} />
+
         <CalendarView
           workouts={workouts}
           onSelectDate={handleSelectDate}
