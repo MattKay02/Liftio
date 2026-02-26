@@ -10,7 +10,6 @@ import { Header } from '@/components/shared/Header';
 import { WorkoutWithExercises } from '@/types/workout';
 import { getCustomTemplates, deleteWorkout, reorderTemplates } from '@/lib/database/queries/workouts';
 import { useWorkoutStore } from '@/lib/stores/workoutStore';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Layers } from 'lucide-react-native';
 import { MAX_CUSTOM_WORKOUTS } from '@/lib/utils/validation';
 import { PremadeWorkoutsSlideUp } from '@/components/shared/PremadeWorkoutsSlideUp';
@@ -134,7 +133,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <View style={styles.safeArea}>
       <Header showSettings={false} />
       {templates.length > 0 ? (
         <DraggableFlatList
@@ -257,7 +256,7 @@ export default function HomeScreen() {
         onClose={() => setShowPremadeSlideUp(false)}
         onWorkoutAdded={() => setTemplates(getCustomTemplates())}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

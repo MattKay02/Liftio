@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { View, StyleSheet, Image, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Settings } from 'lucide-react-native';
 import { Colors } from '@/constants';
@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export const Header = ({ showSettings = false, onSettingsPress }: HeaderProps) => {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         {/* Logo */}
         <View style={styles.logoSection}>
@@ -19,7 +19,6 @@ export const Header = ({ showSettings = false, onSettingsPress }: HeaderProps) =
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}> </Text>
         </View>
 
         {/* Settings Button */}
@@ -42,18 +41,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 10,
     backgroundColor: Colors.bg,
-    height: 80,
   },
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   logo: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
   },
   title: {
     fontSize: 24,

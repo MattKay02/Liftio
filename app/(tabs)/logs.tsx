@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -69,7 +68,7 @@ export default function LogsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <View style={styles.safeArea}>
       <Header showSettings={true} onSettingsPress={() => setShowSettings(true)} />
 
       <ScrollView
@@ -165,7 +164,7 @@ export default function LogsScreen() {
         visible={showSettings}
         onClose={() => setShowSettings(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
