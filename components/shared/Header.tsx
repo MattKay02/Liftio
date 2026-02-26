@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Image, Pressable, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Settings } from 'lucide-react-native';
 import { Colors } from '@/constants';
 
@@ -18,7 +19,7 @@ export const Header = ({ showSettings = false, onSettingsPress }: HeaderProps) =
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}> </Text> {/* Heading title can appear here */}
+          <Text style={styles.title}> </Text>
         </View>
 
         {/* Settings Button */}
