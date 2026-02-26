@@ -26,21 +26,28 @@ Utilities:  expo-crypto (UUID), expo-file-system, expo-document-picker, expo-sha
 
 ```
 app/                        # Expo Router
-├── (tabs)/                 # Tab navigation: index (My Workouts), logs (History)
+├── (tabs)/                 # Tab navigation: index (My Workouts), logs (History + Stats)
 ├── workout/                # active, add-exercise, [id], finish, create-template
 ├── _layout.tsx             # Root layout (GestureHandlerRootView wrapper)
 components/
-├── ui/                     # Button, Input, Checkbox
-├── workout/                # ExerciseCard, SetRow, CardioSetRow
-├── shared/                 # Header, CalendarView, WorkoutDetailSlideUp, SettingsMenu
+├── ui/                     # Button, Input, Checkbox, Card, Divider, AnimatedPressable
+├── workout/                # ExerciseCard, SetRow, CardioSetRow, CardioModePicker
+├── shared/                 # Header, CalendarView, WorkoutDetailSlideUp, SettingsMenu,
+│                           # AllWorkoutsSlideUp, PremadeWorkoutsSlideUp, ExerciseImage,
+│                           # FloatingWorkoutTimer, EmptyState, LoadingScreen, KeyboardDismissButton
+└── stats/                  # ExerciseStatsSection, ExerciseDetailSlideUp, OverviewChart,
+                            # StatsLineChart, TopExercisesList, MoreExercisesDropdown
 lib/
 ├── database/
-│   ├── db.ts               # SQLite init + seed
-│   └── queries/            # workouts, exerciseLibrary
-├── stores/                 # workoutStore, settingsStore (Zustand)
-└── utils/                  # date, uuid, validation
-constants/                  # Colors, Typography, Spacing
-types/                      # workout.ts
+│   ├── db.ts               # SQLite init + seed (~330 exercises with images)
+│   ├── imageSeedData.ts    # 252 image-linked exercise definitions
+│   ├── seedDemoData.ts     # Demo data seeder
+│   └── queries/            # workouts, exerciseLibrary, exerciseStats
+├── stores/                 # workoutStore, settingsStore, templateStore (Zustand)
+├── exerciseImages.ts       # Asset map: imageKey → require()
+└── utils/                  # date, uuid, validation, csv, csvExportImport, pendingExercise
+constants/                  # Colors, Typography, Spacing, Shadows, PremadeWorkouts, index
+types/                      # workout.ts (CardioMode, Exercise, WorkoutSet, etc.)
 ```
 
 ## Design System
@@ -108,10 +115,11 @@ Weights: `regular` (400), `semibold` (600)
 Imports -> Types -> Component (hooks, effects, handlers, render) -> StyleSheet
 
 ### State Management
-- Zustand for global state (active workout, settings)
+- Zustand for global state (active workout, settings, template creation)
 - `useState` for local UI state and edit mode (e.g. workout detail editing)
 - Keep state close to usage; avoid prop drilling
 - Active workout state lives in `workoutStore` — never use it for editing saved workouts
+- `templateStore` manages create-template flow state (name, exercise list, ordering) — always reset on completion/cancel
 
 ### Gestures
 - App wrapped in `GestureHandlerRootView` (`_layout.tsx`)
@@ -131,8 +139,9 @@ Imports -> Types -> Component (hooks, effects, handlers, render) -> StyleSheet
 
 ## Navigation Flow
 
-- **My Workouts tab** (`index.tsx`): Custom templates. Press card -> view-only detail. "Start" button -> start active workout.
-- **Logs tab** (`logs.tsx`): Calendar + recent workouts. Press card -> view-only detail. Pencil -> edit mode.
+- **My Workouts tab** (`index.tsx`): Custom templates in a drag-to-reorder list. "Browse" button opens premade workout templates (PPL, Upper/Lower, etc.). "Create" button → create-template flow. In edit mode, cards can be deleted or drag-reordered. Press card → view-only detail. "Start" button → start active workout.
+- **Logs tab** (`logs.tsx`): Calendar (workout dots) + collapsible recent workouts list + stats section. Tap a date → WorkoutDetailSlideUp preview. Tap a card → view workout detail. Pencil icon → edit mode. "View All" → AllWorkoutsSlideUp. Stats section (ExerciseStatsSection) shows overview charts (duration/volume/reps/sets), top exercises by frequency, and per-exercise drill-down with time-range filtering.
 - **Workout detail** (`workout/[id].tsx`): View mode by default. Edit button switches to inline editing (local state, not workoutStore). Save persists to DB.
-- **Active workout** (`workout/active.tsx`): Timer, live set tracking, add/remove exercises/sets, finish flow.
+- **Active workout** (`workout/active.tsx`): Live timer, set tracking with auto-fill from previous session, add/remove exercises/sets, cardio mode support (time, distance, time+distance, etc.), finish flow.
+- **Create template** (`workout/create-template.tsx`): Managed by `templateStore`. Add exercises from library, reorder, name, and save.
 - Starting a new active workout only happens from the My Workouts tab.
